@@ -43,7 +43,7 @@ builder.add(new VariableDefinition('string', StringType.instance));
 const { unary, binary, varArgs } = BuiltinFunctionDefinition;
 builder.add(varArgs('min', minimum, NumberType.instance));
 builder.add(varArgs('max', maximum, NumberType.instance));
-builder.add(varArgs('abs', abs, NumberType.instance));
+builder.add(unary('abs', abs, NumberType.instance));
 builder.add(unary('round', round, NumberType.instance));
 builder.add(unary('floor', floor, NumberType.instance));
 builder.add(unary('ceil', ceil, NumberType.instance));
@@ -66,7 +66,7 @@ builder.add(varArgs('number::add', add, NumberType.instance));
 builder.add(binary('number::sub', subtract, NumberType.instance, NumberType.instance));
 builder.add(varArgs('number::mul', multiply, NumberType.instance));
 builder.add(binary('number::div', divide, NumberType.instance, NumberType.instance));
-builder.add(varArgs('number::rec', reciprocal, NumberType.instance));
+builder.add(unary('number::rec', reciprocal, NumberType.instance));
 builder.add(binary('number::lt', lessThan, NumberType.instance, NumberType.instance));
 builder.add(binary('number::lte', lessThanEqual, NumberType.instance, NumberType.instance));
 
