@@ -1,3 +1,4 @@
+export * as builtin from './builtin';
 export * from './evaluate';
 export * from './expression';
 export * from './scope';
