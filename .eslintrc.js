@@ -1,3 +1,4 @@
+/** @type {import("eslint").Linter.Config} */
 module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
@@ -45,7 +46,6 @@ module.exports = {
                 alphabetize: { order: 'asc', caseInsensitive: true },
             },
         ],
-        'sort-exports/sort-exports': ['error', { sortDir: 'asc' }],
         'unused-imports/no-unused-imports': 'error',
         'prefer-arrow-functions/prefer-arrow-functions': [
             'warn',
@@ -63,6 +63,13 @@ module.exports = {
             typescript: {}, // this loads <rootdir>/tsconfig.json to eslint
         },
     },
+
+    overrides: [
+        {
+            files: ['src/main.ts'],
+            rules: { 'sort-exports/sort-exports': ['error', { sortDir: 'asc' }] },
+        },
+    ],
 
     ignorePatterns: ['**/antlr4/*.js', '**/dist/**/*'],
 };
