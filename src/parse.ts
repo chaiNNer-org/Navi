@@ -511,7 +511,8 @@ class AstConverter {
     }
 }
 
-const errorListener: Parameters<antlr4.Recognizer['addErrorListener']>[0] = {
+type ErrorListener = Parameters<antlr4.Recognizer['addErrorListener']>[0];
+const errorListener: ErrorListener = {
     syntaxError: (recognizer, offendingSymbol, line, column, msg): void => {
         throw new SyntaxError(`At ${line}:${column}: ${msg}`);
     },
