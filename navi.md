@@ -1,21 +1,41 @@
 # Navi
 
-Types are sets of all their possible value.
-E.g. the type `string` is the set of all possible strings (e.g. `""`, `"foo"`), and the type `number` is the set of all floating point numbers (e.g. 0, -2, 3.14, inf, NaN).
+Navi is type system, but also a programming language.
+This document will explain basics of how Navi works.
 
-As such, set operations are as normal.
-In particular, we denote set intersection as `A & B`, and set union as `A | B`.
-Furthermore, proper subset, subset, proper superset, and superset are denoted as `A < B`, `A <=`, `A > B`, and `A >= B` respectively.
+## What are types?
 
-The empty set is a special type called `never`.
+Conceptually, types are sets of their possible value.
+E.g. the type `string` is the set of all possible strings (e.g. `""`, `"foo"`), and the type `number` is the set of all numbers (e.g. 0, 1, -2, 3.14).
 
-The set that contains all values is a special type called `any`.
+Since types are sets, set operations are as usual.
+In particular, we denote set intersection as `A & B`, and set union as `A | B`, where `A` and `B` are types.
+Set difference is also possible, but with some limitation, [more on that later](#match).
+
+However, types cannot be arbitrary sets.
+E.g. the set of all prime numbers cannot be expressed in Navi.
+Navi provides primitive types from which more types can be constructed.
 
 ## Primitive types
+
+### `never`
+
+This type represents the empty set.
+
+Within Navi, `never` generally represents a dead end or an error.
+Assumptions about input types are typically represented using intersection.
+E.g. "the result is an integer" would be expressed as `int & result`.
+So if the assumption is not met, `never` appears.
+
+### `any`
+
+This type represents the set containing all values.
 
 ### `number`
 
 This type represents any real number plus ±infinity and NaN.
+
+Navi uses 64bit floating values to represent numbers internally.
 
 #### Numeric literal types
 
@@ -46,17 +66,16 @@ This type represents any string.
 String literal types (e.g. `""`, `"foo"`) are types that represent their string value.
 E.g. `"foo"` (the type) is equal to the set that contain the string "foo".
 
-### Requirements for primitive types
+#### String sets and inverted string sets
 
-There are a few requirements for primitive types that are necessary for the type system to work:
+Strings support all set operations, so you can union, intersect, and complement them.
+This means that "the set of all strings expect `"foo"`" is a valid primitive type.
+The "all strings except X" types are called inverted string sets.
 
-1. The intersection and union of any two primitives must be unique.
-2. The intersection of two primitives must either the empty (`never`) or a primitive.
-3. For any set that can be represented as a union of primitives, there must only be one union of primitives that represents the set.
-
-These are properties the type system guarantees.
-Users of the type system don't have to worry about this.
-They only become relevant when changing the type system itself.
+While inverted string sets are a primitive type, they do not have special syntax.
+They are denoted using the `invStrSet` function.
+E.g. `invStrSet("foo" | "bar")` is the set of all strings except `"foo"` and `"bar"`.
+While this is awkward to use, they also don't come up a lot.
 
 ## Structure types
 
@@ -73,34 +92,42 @@ These definitions specify the fields all structure types of that name have.
 
 E.g. `struct Image { width: uint, height: uint, channels: uint }` and `struct null;` are structure type definitions.
 
-Note that all fields are optional when instantiating a type.
+Fields are declared as name-type pairs.
+Field names have to unique per structure definition.
+The field type may be any type except `never`.
+
+### Instantiation
+
+All fields are optional when instantiating a type from a structure definition.
 So `Image`, `Image { width: uint }`, `Image { height: uint }`, and `Image { width: uint, height: uint, channels: uint }` all create the same type given the above type definition for `Image`.
 
 ### New type pattern
 
-Structure types are only equivalent if their names are the same and all their fields are equivalent.
+Structure types are only equivalent if they have the same definition and all their fields are equivalent.
 This means that each structure type definitions creates a new type of structure types.
 
 ### Generics
 
-Each structure type is generic over all its field types.
+Each structure definition is generic over all its field types.
+
+E.g. `Image { width: int(100..) }` is the type of all images with a width of at least 100.
+
+If a field is assigned `never` (e.g. `Image { width: never, height: uint }`), then the resulting type will also be `never`.
 
 ### Field access
 
 Using a field access expression, it is possible to access for type of a field a structure or union of structures.
 
-### Set representation
-
-This is only important for the implementation and theory behind the type system.
-Users can ignore this section.
-
-Internally, structure types are represented as a tuple `(name, field_1, field_2, ..., field_n)`.
-
-E.g. the set representation of the above `Image` structure is `(Image, uint, uint, uint)`.
+The syntax is the dot syntax that is also using in other languages.
+E.g. `Image { width: 100 }.width` is `100` and `Image.width` is `uint`.
 
 ## Variable definitions
 
-Variables definitions are a way to give a name to a specific type expression.
+There is no proper programming language without variables and Navi has them too of course.
+
+However, Navi's variables are immutable.
+Once a value is assigned to them, it cannot be changed.
+So variables can also be thought of as an alias for a specific type expression.
 
 Example:
 
@@ -109,28 +136,45 @@ let int = int(..);
 let uint = int(0..);
 
 let a = 1;
-let b = add(a, 1);
+let b = a + 1; // b will be 2
+```
+
+Since variables are immutable, Navi will evaluate them only as needed, so you can define them in any order.
+
+Example:
+
+```
+let b = a + 1; // b will still be 2
+let a = 1;
+```
+
+However, be careful not to create cyclical variables.
+
+Example:
+
+```
+let x = x + 1; // self-referential variables are not allowed
+
+let a = b + 1;
+let b = a + 1; // cyclic references are also forbidden
 ```
 
 #### Example: boolean type
 
-This type system intentionally does not include a boolean primitive.
-This is because any type described by a finite set of variants can be represented using integer intervals or unions of other types.
+Navi intentionally does not include a boolean primitive.
+This is because it doesn't need one.
 
-A `boolean` type could be implemented like this:
+Boolean values can be `true` or `false`, so the `bool` type is implemented like this:
 
 ```
 struct false;
 struct true;
-let boolean = false | true;
+let bool = false | true;
 ```
 
-### Evaluation
-
-Variables are evaluated lazily.
-If they aren't referenced, they won't be evaluated at all.
-
-Lazy evaluation also brings the benefit that variables can be arranged in any order.
+Note that this is not the only possible implementation for a boolean type.
+We simply need 2 disjoint types to represent the true and false variants.
+So a sum type can also be defined using numeric literals (e.g. `let bool = 0 | 1;`) or string literals (e.g. `let bool = "true" | "false";`).
 
 ## Enum definitions
 
@@ -138,15 +182,17 @@ Enums are syntactic sugar to more easily create sum types (disjoint union).
 Example:
 
 ```
-enum bool { true, false }
+enum Direction { North, East, South, West }
 ```
 
 is equivalent to:
 
 ```
-let bool = bool::true | bool::false;
-struct bool::true;
-struct bool::false;
+let Direction = Direction::North | Direction::East | Direction::South | Direction::West;
+struct Direction::North;
+struct Direction::East;
+struct Direction::South;
+struct Direction::West;
 ```
 
 The `::` is a namespace accessor.
@@ -177,20 +223,20 @@ Functions can have any number of parameters and must always return a value.
 Example:
 
 ```
-def inc(n: number) = add(n, 1);
+def inc(n: number) = n + 1;
 ```
 
 Functions can also contain definitions using a scope:
 
 ```
-def inc(n: number) = { let result = add(n, 1); result };
+def inc(n: number) = { let result = n + 1; result };
 ```
 
 Since scopes and functions are often used together, there a short-hand notation:
 
 ```
 def inc(n: number) {
-    let result = add(n, 1);
+    let result = n + 1;
     result
 }
 ```
@@ -200,10 +246,13 @@ def inc(n: number) {
 Just like how structs are generic over all their fields, functions are generic over all their parameters.
 This property can be used to create types.
 
-#### Example: option type
+#### Example: Option type
 
-Many languages (e.g. Rust) has a explicit option type instead of `null`.
-Here is how a option type would be implemented in Navi:
+We already looked at how to define an option type using an [enum definition](#enum-definitions).
+This was simple, but it wasn't easy to use.
+E.g. the express "an optional `int`", we had to write `Option::Some { value: int } | Option::None`.
+
+This can be fixed by using a function instead of an enum:
 
 ```
 struct Some { value: any };
@@ -211,14 +260,14 @@ struct None;
 
 def Option(value: any) = Some { value: value } | None;
 
-# Instantiation
+// Instantiation
 Option(int) == Some { value: int } | None
 Option(never) == None
 ```
 
-#### Example: result type
+#### Example: Result type
 
-Many languages (e.g. Rust) has a result type.
+Many languages (e.g. Rust) have a result type.
 Here is how a result type would be implemented in this type system:
 
 ```
@@ -237,6 +286,10 @@ Result(int, never) == Success { value: int }
 ```
 let int = int(..);
 let uint = int(0..);
+
+struct true;
+struct false;
+let bool = true | false;
 ```
 
 More types are defined by Chainner.
@@ -268,15 +321,22 @@ The following built-in functions are supported:
 
     Takes a number type and returns the type that represents `-a`.
 
+-   `number::gt(a: number, b: number) -> bool` <br>
+    `number::gte(a: number, b: number) -> bool` <br>
+    `number::lt(a: number, b: number) -> bool` <br>
+    `number::lte(a: number, b: number) -> bool`
+
+    Takes 2 numbers and compares them.
+
 -   `round(a: number) -> number`
 
     Takes a number type and returns the type that represents the nearest whole numbers to the given numbers. The behavior is consistent with JavaScript's `Math.round(a)`.
 
--   `minimum(...numbers: number) -> number`
+-   `min(...numbers: number) -> number`
 
     Takes any number of numbers and returns their minimum. The behavior is consistent with JavaScript's `Math.min(a, b)`.
 
--   `maximum(...numbers: number) -> number`
+-   `max(...numbers: number) -> number`
 
     Takes any number of numbers and returns their maximum. The behavior is consistent with JavaScript's `Math.max(a, b)`.
 
@@ -289,8 +349,9 @@ The following built-in functions are supported:
 Special syntax is available for all `number::*` functions.
 This includes the following operators:
 
-- Unary operators: `-a` for `number::neg`.
-- Binary operators: `a + b`, `a - b`, `a * b`, and `a / b` for the respective functions.
+-   Unary operators: `-a` for `number::neg`.
+-   Binary operators: `a + b`, `a - b`, `a * b`, and `a / b` for the respective functions.
+-   Comparison operators: `a > b`, `a >= b`, `a < b`, and `a <= b` for the respective functions.
 
 Operator precedence is as you would expect it to be.
 E.g. `a + b * c` de-sugars to `number::add(a, number::mul(b, c))`.
@@ -306,7 +367,7 @@ Example:
 ```
 match 1 | 3 {
     1 => 1,
-    _ as x => add(x, 1)
+    _ as x => x + 1
 }
 ```
 
@@ -320,7 +381,7 @@ It behaves as "if the given number is 1, return 1, else return the given number 
 The variable is only available in the arm's expression.
 
 Arms are matched in order and parts of the input type matched by previous arms will not be matched again.
-I.e. the `_ as x => add(x, 1)` arm did not match the `1` in `1 | 3` because it was already matched by `1 => 1`.
+I.e. the `_ as x => x + 1` arm did not match the `1` in `1 | 3` because it was already matched by `1 => 1`.
 
 ### Patterns
 
@@ -332,3 +393,47 @@ Note that an arm with a `never` pattern will never be evaluated.
 ### Binding
 
 Like in the example above (`as x`), the currently matched value can be assigned to a variable that is available to the expression of the arm.
+
+### Limitations
+
+`match` is actually a little too powerful for Navi.
+The problem is that `match` can be used to complement types, which breaks some assumptions the type system makes.
+
+As a result, match arm patterns must be [static expression](#static-expressions).
+However, this restriction is not enforced right now.
+
+## Rules of the type system
+
+This is technical section intended for those implementing the type system.
+If you are only using Navi and don't plan on implementing new type primitives or built-in functions, you can ignore this section.
+
+### Requirements for primitive types
+
+There are a few requirements for primitive types that are necessary for the type system to work:
+
+1. The intersection and union of any two primitives must be unique.
+2. The intersection of two primitives must either the empty (`never`) or a primitive.
+3. For any set that can be represented as a union of primitives, there must only be one union of primitives that represents the set.
+
+### Requirements for built-in functions
+
+TOOD:
+
+### Set representation of structs
+
+Internally, structure types are represented as a tuple `(name, field_1, field_2, ..., field_n)`.
+
+E.g. the set representation of the above `Image` structure is `("Image", uint, uint, uint)`.
+
+This means that it is of upmost importance that the order of fields is consistent when creating structure types.
+While the order of fields doesn't matter to users, it is vital for the implementation.
+
+### Static expressions
+
+Static expression are not defined in terms of what they are, but in terms of what they are not.
+
+Rules:
+- All parameters (scope parameters and function parameters) are not static expressions.
+- The result of an expression that references a non-static expression is also a non-static expression.
+
+
