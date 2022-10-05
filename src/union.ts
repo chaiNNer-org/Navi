@@ -290,6 +290,7 @@ type Closed<T extends Type> =
     | (T extends IntervalType ? NumberPrimitive | UnionType<NumberPrimitive> : never)
     | (T extends IntIntervalType ? NumberPrimitive | UnionType<NumberPrimitive> : never)
     | (T extends StringLiteralType ? StringPrimitive | UnionType<StringPrimitive> : never)
+    | (T extends StructType ? StructType | UnionType<StructType> : never)
     | (T extends UnionType<infer U> ? UnionType<ClosedValueType<U>> : never)
     | T;
 
