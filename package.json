@@ -1,10 +1,12 @@
 {
   "name": "@chainner/navi",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A set-theory based type system used in chaiNNer",
   "main": "./dist/main.js",
   "exports": "./dist/main.js",
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "publishConfig": {
     "access": "public"
   },
