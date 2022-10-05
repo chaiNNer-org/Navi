@@ -1,3 +1,4 @@
+/** @type {import("eslint").Linter.Config} */
 module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
@@ -13,6 +14,7 @@ module.exports = {
         'prefer-arrow-functions',
         'eslint-comments',
         'unused-imports',
+        'sort-exports',
     ],
     parserOptions: {
         ecmaVersion: 2020,
@@ -62,5 +64,12 @@ module.exports = {
         },
     },
 
-    ignorePatterns: ['**/antlr4/*.js'],
+    overrides: [
+        {
+            files: ['src/main.ts'],
+            rules: { 'sort-exports/sort-exports': ['error', { sortDir: 'asc' }] },
+        },
+    ],
+
+    ignorePatterns: ['**/antlr4/*.js', '**/dist/**/*'],
 };

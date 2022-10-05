@@ -1,3 +1,4 @@
+import { BOOL, BOOL_FALSE, BOOL_TRUE, INF, INT, NAN, NEG_INF, ONE, REAL, ZERO } from './constants';
 import {
     IntIntervalType,
     IntervalType,
@@ -125,13 +126,13 @@ const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimit
 
     if (a.value === Infinity) {
         if (b.type === 'number' || b.min === -Infinity) {
-            return union(literal(NaN), literal(Infinity));
+            return union(NAN, INF);
         }
         return a;
     }
     if (a.value === -Infinity) {
         if (b.type === 'number' || b.max === -Infinity) {
-            return union(literal(NaN), literal(-Infinity));
+            return union(NAN, NEG_INF);
         }
         return a;
     }
@@ -152,7 +153,7 @@ const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimit
 
     return new IntervalType(min, max);
 };
-export const add = wrapVarArgs(literal(0), (a: NumberPrimitive, b: NumberPrimitive) => {
+export const add = wrapVarArgs(ZERO, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return addLiteral(a, b);
     if (b.type === 'literal') return addLiteral(b, a);
 
@@ -183,36 +184,36 @@ const multiplyLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberP
 
     if (a.value === Infinity) {
         if (b.type === 'number') {
-            return union(literal(NaN), literal(-Infinity), literal(Infinity));
+            return union(NAN, NEG_INF, INF);
         }
 
         const items: NumberPrimitive[] = [];
-        if (b.has(0)) items.push(literal(NaN));
-        if (b.min < 0) items.push(literal(-Infinity));
-        if (b.max > 0) items.push(literal(Infinity));
+        if (b.has(0)) items.push(NAN);
+        if (b.min < 0) items.push(NEG_INF);
+        if (b.max > 0) items.push(INF);
 
         if (items.length === 1) return items[0];
         return union(...items);
     }
     if (a.value === -Infinity) {
         if (b.type === 'number') {
-            return union(literal(NaN), literal(-Infinity), literal(Infinity));
+            return union(NAN, NEG_INF, INF);
         }
 
         const items: NumberPrimitive[] = [];
-        if (b.has(0)) items.push(literal(NaN));
-        if (b.min < 0) items.push(literal(Infinity));
-        if (b.max > 0) items.push(literal(-Infinity));
+        if (b.has(0)) items.push(NAN);
+        if (b.min < 0) items.push(INF);
+        if (b.max > 0) items.push(NEG_INF);
 
         if (items.length === 1) return items[0];
         return union(...items);
     }
     if (a.value === 0) {
-        if (b.type === 'int-interval') return literal(0);
+        if (b.type === 'int-interval') return ZERO;
         if (b.type === 'number' || b.min === -Infinity || b.max === Infinity) {
-            return union(literal(NaN), literal(0));
+            return union(NAN, ZERO);
         }
-        return literal(0);
+        return ZERO;
     }
 
     if (b.type === 'number') return NumberType.instance;
@@ -237,7 +238,7 @@ const multiplyLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberP
     if (a.value < 0) return interval(max, min);
     return interval(min, max);
 };
-export const multiply = wrapVarArgs(literal(1), (a: NumberPrimitive, b: NumberPrimitive) => {
+export const multiply = wrapVarArgs(ONE, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return multiplyLiteral(a, b);
     if (b.type === 'literal') return multiplyLiteral(b, a);
 
@@ -255,12 +256,12 @@ export const multiply = wrapVarArgs(literal(1), (a: NumberPrimitive, b: NumberPr
         (a.has(0) && (b.has(Infinity) || b.has(-Infinity))) ||
         (b.has(0) && (a.has(Infinity) || a.has(-Infinity)));
     if (hasNaN) {
-        return union(literal(NaN), i);
+        return union(NAN, i);
     }
     return i;
 });
 const reciprocalLiteral = (value: number): Arg<NumberPrimitive> => {
-    if (value === 0) return union(literal(-Infinity), literal(Infinity));
+    if (value === 0) return union(NEG_INF, INF);
     return literal(1 / value);
 };
 export const reciprocal = wrapUnary((n: NumberPrimitive) => {
@@ -275,7 +276,7 @@ export const reciprocal = wrapUnary((n: NumberPrimitive) => {
         }
 
         if (n.has(0)) {
-            const items: NumberPrimitive[] = [literal(-Infinity), literal(Infinity)];
+            const items: NumberPrimitive[] = [NEG_INF, INF];
 
             if (n.min === -Infinity && n.max === Infinity) {
                 items.push(interval(-1, 1));
@@ -291,10 +292,10 @@ export const reciprocal = wrapUnary((n: NumberPrimitive) => {
 
     if (n.min === -Infinity && n.max === Infinity) return n;
     if (n.has(0)) {
-        const items: NumberPrimitive[] = [literal(-Infinity), literal(Infinity)];
+        const items: NumberPrimitive[] = [NEG_INF, INF];
 
-        items.push(n.max === 0 ? literal(Infinity) : interval(1 / n.max, Infinity));
-        items.push(n.min === 0 ? literal(-Infinity) : interval(-Infinity, 1 / n.min));
+        items.push(n.max === 0 ? INF : interval(1 / n.max, Infinity));
+        items.push(n.min === 0 ? NEG_INF : interval(-Infinity, 1 / n.min));
         return union(...items);
     }
     return interval(1 / n.max, 1 / n.min);
@@ -304,13 +305,7 @@ export const divide: BinaryFn<NumberPrimitive> = (a, b) => multiply(a, reciproca
 export const round = wrapUnary((n: NumberPrimitive) => {
     if (n.type === 'literal') return literal(Math.round(n.value));
     if (n.type === 'int-interval') return n;
-    if (n.type === 'number')
-        return union(
-            literal(NaN),
-            literal(-Infinity),
-            literal(Infinity),
-            new IntIntervalType(-Infinity, Infinity)
-        );
+    if (n.type === 'number') return union(NAN, NEG_INF, INF, INT);
 
     const min = Math.round(n.min);
     const max = Math.round(n.max);
@@ -318,20 +313,14 @@ export const round = wrapUnary((n: NumberPrimitive) => {
     if (Number.isFinite(min) && Number.isFinite(max)) return new IntIntervalType(min, max);
 
     const items: NumberPrimitive[] = [new IntIntervalType(min, max)];
-    if (min === -Infinity) items.push(literal(-Infinity));
-    if (max === Infinity) items.push(literal(Infinity));
+    if (min === -Infinity) items.push(NEG_INF);
+    if (max === Infinity) items.push(INF);
     return union(...items);
 });
 export const floor = wrapUnary((n: NumberPrimitive) => {
     if (n.type === 'literal') return literal(Math.floor(n.value));
     if (n.type === 'int-interval') return n;
-    if (n.type === 'number')
-        return union(
-            literal(NaN),
-            literal(-Infinity),
-            literal(Infinity),
-            new IntIntervalType(-Infinity, Infinity)
-        );
+    if (n.type === 'number') return union(NAN, NEG_INF, INF, INT);
 
     const min = Math.floor(n.min);
     const max = Math.floor(n.max);
@@ -339,8 +328,8 @@ export const floor = wrapUnary((n: NumberPrimitive) => {
     if (Number.isFinite(min) && Number.isFinite(max)) return new IntIntervalType(min, max);
 
     const items: NumberPrimitive[] = [new IntIntervalType(min, max)];
-    if (min === -Infinity) items.push(literal(-Infinity));
-    if (max === Infinity) items.push(literal(Infinity));
+    if (min === -Infinity) items.push(NEG_INF);
+    if (max === Infinity) items.push(INF);
     return union(...items);
 });
 export const ceil: UnaryFn<NumberPrimitive> = (a) => negate(floor(negate(a)));
@@ -368,7 +357,7 @@ const minimumLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPr
     if (a.value === Infinity) return b;
 
     if (b.type === 'literal') return literal(Math.min(a.value, b.value));
-    if (b.type === 'number') return union(literal(NaN), interval(-Infinity, a.value));
+    if (b.type === 'number') return union(NAN, interval(-Infinity, a.value));
 
     if (a.value <= b.min) return a;
     if (b.max <= a.value) return b;
@@ -388,7 +377,7 @@ const minimumNumber = (
 ): Arg<NumberPrimitive> => {
     if (b.type === 'number') return NumberType.instance;
     if (b.max === Infinity) return NumberType.instance;
-    return union(literal(NaN), interval(-Infinity, b.max));
+    return union(NAN, interval(-Infinity, b.max));
 };
 const minimumIntInterval = (
     a: IntIntervalType,
@@ -409,7 +398,7 @@ const minimumIntInterval = (
     const intMax = Number.isInteger(b.min) ? b.min - 1 : Math.floor(b.min);
     return union(intInterval(a.min, intMax), interval(b.min, Math.min(a.max, b.max)));
 };
-export const minimum = wrapVarArgs(literal(Infinity), (a: NumberPrimitive, b: NumberPrimitive) => {
+export const minimum = wrapVarArgs(INF, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return minimumLiteral(a, b);
     if (b.type === 'literal') return minimumLiteral(b, a);
 
@@ -421,13 +410,13 @@ export const minimum = wrapVarArgs(literal(Infinity), (a: NumberPrimitive, b: Nu
 
     return new IntervalType(Math.min(a.min, b.min), Math.min(a.max, b.max));
 });
-export const maximum = wrapVarArgs(literal(-Infinity), (a: NumberPrimitive, b: NumberPrimitive) => {
+export const maximum = wrapVarArgs(NEG_INF, (a: NumberPrimitive, b: NumberPrimitive) => {
     return negate(minimum(negate(a), negate(b)));
 });
 
 export const abs = wrapUnary<NumberPrimitive>((a) => {
     if (a.type === 'literal') return literal(Math.abs(a.value));
-    if (a.type === 'number') return union(literal(NaN), interval(0, Infinity));
+    if (a.type === 'number') return union(NAN, interval(0, Infinity));
 
     let min;
     let max;
@@ -448,7 +437,7 @@ export const abs = wrapUnary<NumberPrimitive>((a) => {
 
 export const sin = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
     if (a.type === 'literal') return literal(Math.sin(a.value));
-    if (a.type === 'number') return union(literal(NaN), interval(-1, 1));
+    if (a.type === 'number') return union(NAN, interval(-1, 1));
 
     if (a.type === 'int-interval' && isSmallIntInterval(a)) {
         return mapSmallIntInterval(a, (i) => literal(Math.sin(i)));
@@ -456,13 +445,13 @@ export const sin = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
 
     // the following could be improved, but it's not important right now
     if (a.has(-Infinity) || a.has(Infinity)) {
-        return union(literal(NaN), interval(-1, 1));
+        return union(NAN, interval(-1, 1));
     }
     return interval(-1, 1);
 });
 export const cos = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
     if (a.type === 'literal') return literal(Math.cos(a.value));
-    if (a.type === 'number') return union(literal(NaN), interval(-1, 1));
+    if (a.type === 'number') return union(NAN, interval(-1, 1));
 
     if (a.type === 'int-interval' && isSmallIntInterval(a)) {
         return mapSmallIntInterval(a, (i) => literal(Math.cos(i)));
@@ -470,13 +459,13 @@ export const cos = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
 
     // the following could be improved, but it's not important right now
     if (a.has(-Infinity) || a.has(Infinity)) {
-        return union(literal(NaN), interval(-1, 1));
+        return union(NAN, interval(-1, 1));
     }
     return interval(-1, 1);
 });
 
 export const exp = wrapUnary<NumberPrimitive>((a) => {
-    if (a.type === 'number') return union(literal(NaN), interval(0, Infinity));
+    if (a.type === 'number') return union(NAN, interval(0, Infinity));
     if (a.type === 'literal') return literal(fixRoundingError(Math.exp(a.value)));
 
     if (a.type === 'int-interval' && isSmallIntInterval(a)) {
@@ -511,12 +500,12 @@ export const log = wrapUnary<NumberPrimitive>((a) => {
 });
 
 const powPositiveLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (a === 1) return literal(1);
+    if (a === 1) return ONE;
     return exp(multiplyLiteral(literal(Math.log(a)), b));
 };
 const powLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
     if (Number.isNaN(a)) {
-        return literal(NaN);
+        return NAN;
     }
     if (Number.isFinite(a)) {
         if (a > 0) {
@@ -568,10 +557,6 @@ export const concat = wrapVarArgs(new StringLiteralType(''), (a, b) => {
     return StringType.instance;
 });
 
-const boolTrue = new StructType('true');
-const boolFalse = new StructType('false');
-const bool = union(boolFalse, boolTrue);
-
 type NonNan = NumericLiteralType | IntervalType | IntIntervalType;
 const handleNan = (
     n: NumberPrimitive
@@ -580,7 +565,7 @@ const handleNan = (
         return { has: false, without: n };
     }
     if (n.type === 'number') {
-        return { has: true, without: new IntervalType(-Infinity, Infinity) };
+        return { has: true, without: REAL };
     }
 
     if (Number.isNaN(n.value)) {
@@ -650,11 +635,11 @@ const lessThenReal = (a: NonNan, b: NonNan): Arg<StructType> => {
 
     if (l.someLess(r)) {
         if (l.someGreaterEqual(r)) {
-            return bool;
+            return BOOL;
         }
-        return boolTrue;
+        return BOOL_TRUE;
     }
-    return boolFalse;
+    return BOOL_FALSE;
 };
 export const lessThan = wrapBinary<NumberPrimitive, StructType>((a, b) => {
     const aNan = handleNan(a);
@@ -662,9 +647,9 @@ export const lessThan = wrapBinary<NumberPrimitive, StructType>((a, b) => {
 
     if (aNan.has || bNan.has) {
         if (aNan.without && bNan.without) {
-            return union(boolFalse, lessThenReal(aNan.without, bNan.without));
+            return union(BOOL_FALSE, lessThenReal(aNan.without, bNan.without));
         }
-        return boolFalse;
+        return BOOL_FALSE;
     }
     return lessThenReal(aNan.without, bNan.without);
 });
@@ -674,11 +659,11 @@ const lessThenEqualReal = (a: NonNan, b: NonNan): Arg<StructType> => {
 
     if (l.someLessEqual(r)) {
         if (l.someGreater(r)) {
-            return bool;
+            return BOOL;
         }
-        return boolTrue;
+        return BOOL_TRUE;
     }
-    return boolFalse;
+    return BOOL_FALSE;
 };
 export const lessThanEqual = wrapBinary<NumberPrimitive, StructType>((a, b) => {
     const aNan = handleNan(a);
@@ -686,9 +671,9 @@ export const lessThanEqual = wrapBinary<NumberPrimitive, StructType>((a, b) => {
 
     if (aNan.has || bNan.has) {
         if (aNan.without && bNan.without) {
-            return union(boolFalse, lessThenEqualReal(aNan.without, bNan.without));
+            return union(BOOL_FALSE, lessThenEqualReal(aNan.without, bNan.without));
         }
-        return boolFalse;
+        return BOOL_FALSE;
     }
     return lessThenEqualReal(aNan.without, bNan.without);
 });

@@ -1,3 +1,4 @@
+import { NAN, REAL } from './constants';
 import { isSupersetOf } from './relation';
 import {
     AnyType,
@@ -16,7 +17,7 @@ import {
     UnionType,
     ValueType,
 } from './types';
-import { groupByUnderlying, intInterval, interval, isSameStructType, literal } from './types-util';
+import { groupByUnderlying, intInterval, interval, isSameStructType } from './types-util';
 import { union } from './union';
 import { assertNever, sameNumber } from './util';
 
@@ -46,14 +47,14 @@ const complementNumber = (n: NumberPrimitive): WithoutResult<NumberPrimitive> =>
             return NumberType.instance;
         case 'literal':
             if (Number.isNaN(n.value)) {
-                return interval(-Infinity, Infinity);
+                return REAL;
             }
             // except for NaN, the result is not representable
             return NumberType.instance;
         case 'interval': {
             // Note: except for `-Infinity..Infinity`, the result is not representable and will be
             // approximated
-            const items: NumberPrimitive[] = [literal(NaN)];
+            const items: NumberPrimitive[] = [NAN];
             if (-Infinity < n.min) items.push(interval(-Infinity, n.min));
             if (n.max < Infinity) items.push(interval(n.max, Infinity));
             return union(...items);

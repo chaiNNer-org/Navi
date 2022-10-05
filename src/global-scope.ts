@@ -25,7 +25,7 @@ import {
 } from './builtin';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
-import { BuiltinFunctionDefinition, ScopeBuilder } from './scope';
+import { BuiltinFunctionDefinition, Scope, ScopeBuilder } from './scope';
 import { SourceDocument } from './source';
 import { AnyType, NeverType, NumberType, StringType } from './types';
 import { union } from './union';
@@ -102,4 +102,4 @@ for (const d of definitions) {
  *
  * This is Navi's top-level scope. It contains all of Navi's builtin types and functions.
  */
-export const globalScope = builder.createScope();
+export const globalScope: Scope = builder.createScope();
