@@ -50,9 +50,13 @@ export const isSameStructType = (a: StructType, b: StructType): boolean => {
 
 export const isSameType = (a: Type, b: Type): boolean => a === b || a.getTypeId() === b.getTypeId();
 
-export const literal = (n: number) => {
-    return new NumericLiteralType(n);
-};
+export function literal(number: number): NumericLiteralType;
+export function literal(string: string): StringLiteralType;
+// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
+export function literal(value: number | string) {
+    if (typeof value === 'number') return new NumericLiteralType(value);
+    return new StringLiteralType(value);
+}
 export const interval = (min: number, max: number) => {
     if (min === max) return new NumericLiteralType(min);
     return new IntervalType(min, max);
