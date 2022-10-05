@@ -284,4 +284,11 @@ export class Scope {
 
         p.value = value;
     }
+
+    /**
+     * Returns a iterable of all definition in this scope, not including parent scopes.
+     */
+    entries(): Iterable<[string, ScopeDefinition]> {
+        return this.definitions.entries();
+    }
 }
