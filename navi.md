@@ -417,7 +417,7 @@ There are a few requirements for primitive types that are necessary for the type
 
 ### Requirements for built-in functions
 
-TOOD:
+See https://github.com/chaiNNer-org/Navi/issues/3.
 
 ### Set representation of structs
 
