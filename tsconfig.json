@@ -7,7 +7,7 @@
     "newLine": "lf",
 
     "noImplicitAny": true,
-    "module": "es6",
+    "module": "CommonJS",
     "target": "es6",
     "allowJs": true,
     "checkJs": false,
