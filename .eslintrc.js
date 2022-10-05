@@ -13,6 +13,7 @@ module.exports = {
         'prefer-arrow-functions',
         'eslint-comments',
         'unused-imports',
+        'sort-exports',
     ],
     parserOptions: {
         ecmaVersion: 2020,
@@ -44,6 +45,7 @@ module.exports = {
                 alphabetize: { order: 'asc', caseInsensitive: true },
             },
         ],
+        'sort-exports/sort-exports': ['error', { sortDir: 'asc' }],
         'unused-imports/no-unused-imports': 'error',
         'prefer-arrow-functions/prefer-arrow-functions': [
             'warn',
@@ -62,5 +64,5 @@ module.exports = {
         },
     },
 
-    ignorePatterns: ['**/antlr4/*.js'],
+    ignorePatterns: ['**/antlr4/*.js', '**/dist/**/*'],
 };
