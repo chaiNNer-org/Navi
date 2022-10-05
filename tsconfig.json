@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
-    "noEmit": true,
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "newLine": "lf",
+
     "noImplicitAny": true,
     "module": "es6",
     "target": "es6",
