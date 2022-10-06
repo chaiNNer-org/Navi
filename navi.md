@@ -425,7 +425,7 @@ Internally, structure types are represented as a tuple `(name, field_1, field_2,
 
 E.g. the set representation of the above `Image` structure is `("Image", uint, uint, uint)`.
 
-This means that it is of upmost importance that the order of fields is consistent when creating structure types.
+This means that it is of utmost importance that the order of fields is consistent when creating structure types.
 While the order of fields doesn't matter to users, it is vital for the implementation.
 
 ### Static expressions
