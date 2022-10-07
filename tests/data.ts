@@ -10,12 +10,15 @@ import {
     IntervalType,
     InvertedStringSetType,
     NeverType,
+    NumberPrimitive,
     NumberType,
     StringLiteralType,
+    StringPrimitive,
     StringType,
     StructType,
     StructTypeField,
     Type,
+    UnionType,
     ValueType,
 } from '../src/types';
 import { literal } from '../src/types-util';
@@ -47,8 +50,8 @@ const fieldAccess = (expressions: readonly Expression[]): Expression[] => {
     return expressions.map((e) => new FieldAccessExpression(e, 'a'));
 };
 
-export const sets: readonly Type[] = [NeverType.instance, AnyType.instance];
-export const numbers: readonly Type[] = [
+export const sets = [NeverType.instance, AnyType.instance] as const;
+export const numbers: readonly (NumberPrimitive | UnionType<NumberPrimitive>)[] = [
     NumberType.instance,
     literal(-3.14),
     literal(-2),
@@ -86,7 +89,7 @@ export const numbers: readonly Type[] = [
     new IntIntervalType(-Infinity, 1),
     new IntIntervalType(-Infinity, Infinity),
 ];
-export const strings: readonly Type[] = [
+export const strings: readonly (StringPrimitive | UnionType<StringPrimitive>)[] = [
     StringType.instance,
     new StringLiteralType(''),
     new StringLiteralType('foo'),
@@ -97,7 +100,7 @@ export const strings: readonly Type[] = [
     new InvertedStringSetType(new Set(['foo', 'bar'])),
     new InvertedStringSetType(new Set(['bar'])),
 ];
-export const structs: readonly Type[] = [
+export const structs: readonly (StructType | UnionType<StructType>)[] = [
     new StructType('null'),
 
     new StructType('Foo', [
@@ -122,6 +125,7 @@ export const structs: readonly Type[] = [
     ]),
 ];
 
+export const nonStructTypes = [...sets, ...numbers, ...strings] as const;
 export const types: readonly Type[] = [...sets, ...numbers, ...strings, ...structs];
 
 export const expressions: readonly Expression[] = [
