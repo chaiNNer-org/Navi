@@ -65,9 +65,9 @@ expression: unionExpression;
 // misc
 args: (expression (',' expression)* ','?)?;
 fields: '{' (field (',' field)* ','?)? '}';
-field: Identifier ':' expression;
+field: Identifier assert;
 parameters: '(' (parameter (',' parameter)* ','?)? ')';
-parameter: Identifier ':' expression;
+parameter: Identifier assert;
 assert: ':' expression;
 
 name: Identifier ('::' Identifier)*;

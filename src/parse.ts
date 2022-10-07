@@ -221,15 +221,25 @@ class AstConverter {
         return getMultiple(args, 'expression').map((e) => this.toExpression(e));
     }
 
+    private getAssert(
+        context: Contexts['FieldContext'] | Contexts['ParameterContext']
+    ): Expression {
+        const assert = getRequired(context, 'assert');
+        return this.toExpression(getRequired(assert, 'expression'));
+    }
+    private getOptionalAssert(
+        context: Contexts['VariableDefinitionContext'] | Contexts['FunctionDefinitionContext']
+    ): Expression | undefined {
+        const assert = getOptional(context, 'assert');
+        if (assert === undefined) return undefined;
+        return this.toExpression(getRequired(assert, 'expression'));
+    }
+
     private fieldsToList(
         args: Contexts['FieldsContext']
     ): (readonly [name: string, expressions: Expression])[] {
         return getMultiple(args, 'field').map((f) => {
-            return [
-                getRequiredToken(f, 'Identifier').getText(),
-
-                this.toExpression(getRequired(f, 'expression')),
-            ] as const;
+            return [getRequiredToken(f, 'Identifier').getText(), this.getAssert(f)] as const;
         });
     }
 
@@ -237,11 +247,7 @@ class AstConverter {
         args: Contexts['ParametersContext']
     ): (readonly [name: string, expressions: Expression])[] {
         return getMultiple(args, 'parameter').map((f) => {
-            return [
-                getRequiredToken(f, 'Identifier').getText(),
-
-                this.toExpression(getRequired(f, 'expression')),
-            ] as const;
+            return [getRequiredToken(f, 'Identifier').getText(), this.getAssert(f)] as const;
         });
     }
 
@@ -423,13 +429,6 @@ class AstConverter {
         return definitions;
     };
 
-    private getAssert(
-        context: Contexts['VariableDefinitionContext'] | Contexts['FunctionDefinitionContext']
-    ): Expression | undefined {
-        const assert = getOptional(context, 'assert');
-        if (assert === undefined) return undefined;
-        return this.toExpression(getRequired(assert, 'expression'));
-    }
     private toDefinitionsWithoutSource(
         context:
             | Contexts['DefinitionDocumentContext']
@@ -470,7 +469,7 @@ class AstConverter {
             const rule =
                 getOptional(context, 'expression') ?? getOptional(context, 'scopeExpression');
             if (!rule) throw new ConversionError(context, `No known rule or token`);
-            const assert = this.getAssert(context);
+            const assert = this.getOptionalAssert(context);
             return [
                 new FunctionDefinition(
                     name,
@@ -486,7 +485,7 @@ class AstConverter {
         if (context instanceof NaviParser.VariableDefinitionContext) {
             const name = this.getName(getRequired(context, 'name'));
             const value = this.toExpression(getRequired(context, 'expression'));
-            const assert = this.getAssert(context);
+            const assert = this.getOptionalAssert(context);
             return [new VariableDefinition(name, value, assert)];
         }
         if (context instanceof NaviParser.EnumDefinitionContext) {
