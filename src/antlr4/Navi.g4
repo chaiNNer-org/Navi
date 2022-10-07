@@ -14,8 +14,11 @@ definition:
 	| enumDefinition;
 structDefinition: Struct name (';' | fields);
 functionDefinition:
-	Def name parameters ('=' expression ';' | scopeExpression);
-variableDefinition: Let name '=' expression ';';
+	Def name parameters assert? (
+		'=' expression ';'
+		| scopeExpression
+	);
+variableDefinition: Let name assert? '=' expression ';';
 enumDefinition:
 	Enum name '{' (enumVariant (',' enumVariant)* ','?)* '}';
 enumVariant: Identifier fields?;
@@ -65,6 +68,7 @@ fields: '{' (field (',' field)* ','?)? '}';
 field: Identifier ':' expression;
 parameters: '(' (parameter (',' parameter)* ','?)? ')';
 parameter: Identifier ':' expression;
+assert: ':' expression;
 
 name: Identifier ('::' Identifier)*;
 

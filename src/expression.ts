@@ -4,7 +4,7 @@ import {
     assertValidStructName,
 } from './names';
 import { Source } from './source';
-import { Type } from './types';
+import { AnyType, Type } from './types';
 
 type PureExpression =
     | UnionExpression
@@ -294,26 +294,29 @@ export class FunctionDefinition implements DefinitionBase {
 
     readonly parameters: readonly FunctionDefinitionParameter[];
 
+    readonly assert: Expression;
+
     readonly value: Expression;
 
     constructor(
         name: string,
         parameters: readonly FunctionDefinitionParameter[],
-        value: Expression
+        value: Expression,
+        assert?: Expression
     ) {
         assertValidStructName(name);
         this.name = name;
         this.parameters = parameters;
         this.value = value;
+        this.assert = assert ?? AnyType.instance;
     }
 
     toString(): string {
-        const params = `(${this.parameters
-            .map((p) => `${p.name}: ${p.type.toString()}`)
-            .join(', ')})`;
+        const params = this.parameters.map((p) => `${p.name}: ${p.type.toString()}`).join(', ');
         const value =
             this.value.type === 'scope' ? this.value.toString() : `= ${this.value.toString()};`;
-        return `def ${this.name}${params} ${value}`;
+        const assert = this.assert.type === 'any' ? '' : `: ${this.assert.toString()}`;
+        return `def ${this.name}(${params})${assert} ${value}`;
     }
 }
 
@@ -326,15 +329,19 @@ export class VariableDefinition implements DefinitionBase {
 
     readonly name: string;
 
+    readonly assert: Expression;
+
     readonly value: Expression;
 
-    constructor(name: string, value: Expression) {
+    constructor(name: string, value: Expression, assert?: Expression) {
         assertValidStructName(name);
         this.name = name;
         this.value = value;
+        this.assert = assert ?? AnyType.instance;
     }
 
     toString(): string {
-        return `let ${this.name} = ${this.value.toString()};`;
+        const assert = this.assert.type === 'any' ? '' : `: ${this.assert.toString()}`;
+        return `let ${this.name}${assert} = ${this.value.toString()};`;
     }
 }

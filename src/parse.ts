@@ -423,6 +423,13 @@ class AstConverter {
         return definitions;
     };
 
+    private getAssert(
+        context: Contexts['VariableDefinitionContext'] | Contexts['FunctionDefinitionContext']
+    ): Expression | undefined {
+        const assert = getOptional(context, 'assert');
+        if (assert === undefined) return undefined;
+        return this.toExpression(getRequired(assert, 'expression'));
+    }
     private toDefinitionsWithoutSource(
         context:
             | Contexts['DefinitionDocumentContext']
@@ -463,6 +470,7 @@ class AstConverter {
             const rule =
                 getOptional(context, 'expression') ?? getOptional(context, 'scopeExpression');
             if (!rule) throw new ConversionError(context, `No known rule or token`);
+            const assert = this.getAssert(context);
             return [
                 new FunctionDefinition(
                     name,
@@ -470,14 +478,16 @@ class AstConverter {
                         ([parameterName, type]) =>
                             new FunctionDefinitionParameter(parameterName, type)
                     ),
-                    this.toExpression(rule)
+                    this.toExpression(rule),
+                    assert
                 ),
             ];
         }
         if (context instanceof NaviParser.VariableDefinitionContext) {
             const name = this.getName(getRequired(context, 'name'));
             const value = this.toExpression(getRequired(context, 'expression'));
-            return [new VariableDefinition(name, value)];
+            const assert = this.getAssert(context);
+            return [new VariableDefinition(name, value, assert)];
         }
         if (context instanceof NaviParser.EnumDefinitionContext) {
             const name = this.getName(getRequired(context, 'name'));

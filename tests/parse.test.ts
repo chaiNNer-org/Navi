@@ -122,6 +122,8 @@ const expressionSnippets: string[] = [
     // let
     String.raw`let bool = true | false; bool`,
     String.raw`let std::bool = true | false; std::bool`,
+    String.raw`let a: int = 0; a`,
+    String.raw`let a: any = 0; a`,
 
     // enum
     String.raw`enum Direction { North, East, South, West } Direction`,
@@ -130,6 +132,9 @@ const expressionSnippets: string[] = [
     // def
     String.raw`def inc(a: number) = add(a, 1); inc(0)`,
     String.raw`def math :: inc(a: number) = add(a, 1); math::inc(0)`,
+    String.raw`def foo(a: int): int = a; foo(int)`,
+    String.raw`def foo(a: int): int { a + 1 } foo(int)`,
+    String.raw`def foo(a: uint): Image { width: uint } { let width = a + 1; Image { width: width } } foo(int)`,
 ];
 const invalidExpressionSnippets: string[] = [
     String.raw``,

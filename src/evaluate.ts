@@ -110,6 +110,20 @@ export type ErrorDetails =
               definition: Type;
           };
           message: string;
+      }
+    | {
+          type: 'Incompatible return type';
+          definition: FunctionDefinition;
+          value: Type;
+          assert: Type;
+          message: string;
+      }
+    | {
+          type: 'Incompatible variable type';
+          definition: VariableDefinition;
+          value: Type;
+          assert: Type;
+          message: string;
       };
 
 export class EvaluationError extends Error {
@@ -231,6 +245,29 @@ const resolveNamed = (
 
     return { definition, scope };
 };
+const evaluateVariable = (definition: ScopeVariableDefinition, definitionScope: Scope): Type => {
+    if (definition.value === undefined) {
+        const value = evaluate(definition.definition.value, definitionScope);
+
+        const assert = (definition.assert ??= evaluate(
+            definition.definition.assert,
+            definitionScope
+        ));
+        if (!isSubsetOf(value, assert)) {
+            throw new EvaluationError({
+                type: 'Incompatible variable type',
+                definition: definition.definition,
+                value: value,
+                assert: assert,
+                message: `The type ${value.toString()} is not assignable to ${assert.toString()}`,
+            });
+        }
+
+        definition.value = value;
+    }
+
+    return definition.value;
+};
 const evaluateNamed = (expression: NamedExpression, scope: Scope): Type => {
     const { definition, scope: definitionScope } = resolveNamed(expression, scope);
 
@@ -249,11 +286,7 @@ const evaluateNamed = (expression: NamedExpression, scope: Scope): Type => {
             });
         }
 
-        if (definition.value === undefined) {
-            definition.value = evaluate(definition.definition.value, definitionScope);
-        }
-
-        return definition.value;
+        return evaluateVariable(definition, definitionScope);
     }
 
     // struct
@@ -415,7 +448,22 @@ const evaluateFunctionCall = (expression: FunctionCallExpression, scope: Scope):
         definition.definition.parameters.forEach(({ name }, i) => {
             functionScope.add(new VariableDefinition(name, args[i]));
         });
-        return evaluate(definition.definition.value, functionScope.createScope());
+
+        const assert = (definition.assert ??= evaluate(
+            definition.definition.assert,
+            definitionScope
+        ));
+        const value = evaluate(definition.definition.value, functionScope.createScope());
+        if (!isSubsetOf(value, assert)) {
+            throw new EvaluationError({
+                type: 'Incompatible return type',
+                definition: definition.definition,
+                value,
+                assert,
+                message: `The return value ${value.toString()} is not allowed by the return type ${assert.toString()}`,
+            });
+        }
+        return value;
     }
     return definition.definition.fn(...args);
 };
