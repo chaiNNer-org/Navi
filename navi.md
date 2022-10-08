@@ -176,6 +176,17 @@ Note that this is not the only possible implementation for a boolean type.
 We simply need 2 disjoint types to represent the true and false variants.
 So a sum type can also be defined using numeric literals (e.g. `let bool = 0 | 1;`) or string literals (e.g. `let bool = "true" | "false";`).
 
+### Type assertions
+
+Variables may have an optional type assertion.
+E.g. `let a: int = foo;`.
+If the value assigned to the variable is not a subset of the asserted type, an evaluation error will be thrown.
+
+This is mostly useful to:
+
+1. Document the intended type of a variable.
+2. Verify the correctness of complex expressions.
+
 ## Enum definitions
 
 Enums are syntactic sugar to more easily create sum types (disjoint union).
@@ -280,6 +291,26 @@ def Result(success: any, error: any) = Success { value: success } | Error { valu
 Result(int, string) == Success { value: int } | Error { value: string }
 Result(int, never) == Success { value: int }
 ```
+
+### Type assertions
+
+Aside from parameter types, functions may have an optional return type assertion.
+These assertions ensure that all types returned by function are of a certain type.
+They work very similar to variable type assertions.
+
+Example:
+
+```
+let fooVar: int = 1;
+def fooFn(): int = 1;
+```
+
+If the type returned by a function is not a subset of the return type, an evaluation error will be thrown.
+
+Just as with variable type assertions, this is mostly useful to:
+
+1. Document the intended return types of a function.
+2. Verify the correctness of complex functions.
 
 ## Built-in type definitions
 
@@ -433,7 +464,6 @@ While the order of fields doesn't matter to users, it is vital for the implement
 Static expression are not defined in terms of what they are, but in terms of what they are not.
 
 Rules:
-- All parameters (scope parameters and function parameters) are not static expressions.
-- The result of an expression that references a non-static expression is also a non-static expression.
 
-
+-   All parameters (scope parameters and function parameters) are not static expressions.
+-   The result of an expression that references a non-static expression is also a non-static expression.

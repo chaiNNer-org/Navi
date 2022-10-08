@@ -7,6 +7,8 @@ import {
     NamedExpression,
     UnionExpression,
 } from '../src/expression';
+import { parseExpression } from '../src/parse';
+import { SourceDocument } from '../src/source';
 import { AnyType, NeverType, NumberType, StringLiteralType, StringType, Type } from '../src/types';
 import { literal } from '../src/types-util';
 import { without } from '../src/without';
@@ -250,4 +252,34 @@ describe('Match', () => {
             .join('\n');
         expect(actual).toMatchSnapshot();
     });
+});
+
+test('Snippet evaluation', () => {
+    const snippets: readonly string[] = [
+        String.raw`1 + 1`,
+        String.raw`2 * uint`,
+        String.raw`true | false`,
+
+        String.raw`let foo: int = 4; foo`,
+        String.raw`let foo: int = 1.2; foo`,
+        String.raw`let foo: int = "1"; foo`,
+
+        String.raw`def foo(): int = 4; foo()`,
+        String.raw`def foo(): int = 1.2; foo()`,
+        String.raw`def foo(): int = "1"; foo()`,
+    ];
+
+    const actual = snippets
+        .map((s) => {
+            let result: string;
+            try {
+                const e = parseExpression(new SourceDocument(s, 'snippet'));
+                result = evaluate(e, scope).toString();
+            } catch (error) {
+                result = String(error);
+            }
+            return `${s}\n=>> ${result}`;
+        })
+        .join('\n\n');
+    expect(actual).toMatchSnapshot();
 });

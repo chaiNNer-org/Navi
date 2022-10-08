@@ -123,11 +123,13 @@ export interface ScopeFunctionDefinition {
     readonly type: 'function';
     readonly definition: FunctionDefinition;
     parameters?: readonly Type[];
+    assert?: Type;
     varArgs?: undefined;
 }
 export interface ScopeVariableDefinition {
     readonly type: 'variable';
     readonly definition: VariableDefinition;
+    assert?: Type;
     value?: Type;
 }
 export interface ScopeParameterDefinition {

@@ -9906,6 +9906,35 @@ match Foo { a: 1 | 3, b: 2 } { 2 => "2", number => "number", string => "string",
 match Foo { a: 3, b: number } { 2 => "2", number => "number", string => "string", null => "null", _ => "other" } => "other""
 `;
 
+exports[`Snippet evaluation 1`] = `
+"1 + 1
+=>> 2
+
+2 * uint
+=>> int(0..inf)
+
+true | false
+=>> false | true
+
+let foo: int = 4; foo
+=>> 4
+
+let foo: int = 1.2; foo
+=>> Error: Incompatible variable type: The type 1.2 is not assignable to int(-inf..inf)
+
+let foo: int = "1"; foo
+=>> Error: Incompatible variable type: The type "1" is not assignable to int(-inf..inf)
+
+def foo(): int = 4; foo()
+=>> 4
+
+def foo(): int = 1.2; foo()
+=>> Error: Incompatible return type: The return value 1.2 is not allowed by the return type int(-inf..inf)
+
+def foo(): int = "1"; foo()
+=>> Error: Incompatible return type: The return value "1" is not allowed by the return type int(-inf..inf)"
+`;
+
 exports[`without evaluation 1`] = `
 "number \\ number => never
 number \\ -3.14 => number

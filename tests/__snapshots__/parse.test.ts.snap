@@ -272,6 +272,12 @@ number::add(a, number::neg(number::neg(-100)))
 >>> let std::bool = true | false; std::bool
 { let std::bool = true | false; std::bool }
 
+>>> let a: int = 0; a
+{ let a: int = 0; a }
+
+>>> let a: any = 0; a
+{ let a = 0; a }
+
 >>> enum Direction { North, East, South, West } Direction
 { let Direction = Direction::North | Direction::East | Direction::South | Direction::West; struct Direction::North; struct Direction::East; struct Direction::South; struct Direction::West; Direction }
 
@@ -282,7 +288,16 @@ number::add(a, number::neg(number::neg(-100)))
 { def inc(a: number) = add(a, 1); inc(0) }
 
 >>> def math :: inc(a: number) = add(a, 1); math::inc(0)
-{ def math::inc(a: number) = add(a, 1); math::inc(0) }"
+{ def math::inc(a: number) = add(a, 1); math::inc(0) }
+
+>>> def foo(a: int): int = a; foo(int)
+{ def foo(a: int): int = a; foo(int) }
+
+>>> def foo(a: int): int { a + 1 } foo(int)
+{ def foo(a: int): int = number::add(a, 1); foo(int) }
+
+>>> def foo(a: uint): Image { width: uint } { let width = a + 1; Image { width: width } } foo(int)
+{ def foo(a: uint): Image { width: uint } { let width = number::add(a, 1); Image { width: width } } foo(int) }"
 `;
 
 exports[`Invalid expression parsing 1`] = `
