@@ -1,5 +1,5 @@
 import { NumberPrimitive, StringLiteralType, StringPrimitive, StringType } from '../types';
-import { wrapUnary, wrapVarArgs } from './util';
+import { wrapReducerVarArgs, wrapUnary } from './wrap';
 
 export const toString = wrapUnary<StringPrimitive | NumberPrimitive, StringPrimitive>((a) => {
     if (a.underlying === 'string') return a;
@@ -15,7 +15,7 @@ export const toString = wrapUnary<StringPrimitive | NumberPrimitive, StringPrimi
     return StringType.instance;
 });
 
-export const concat = wrapVarArgs(new StringLiteralType(''), (a, b) => {
+export const concat = wrapReducerVarArgs(new StringLiteralType(''), (a, b) => {
     if (a.type === 'literal' && b.type === 'literal') {
         return new StringLiteralType(a.value + b.value);
     }

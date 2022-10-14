@@ -9,17 +9,8 @@ import {
 } from '../types';
 import { intInterval, interval, literal } from '../types-util';
 import { union } from '../union';
-import {
-    Arg,
-    BinaryFn,
-    UnaryFn,
-    fixRoundingError,
-    isSmallIntInterval,
-    mapSmallIntInterval,
-    wrapBinary,
-    wrapUnary,
-    wrapVarArgs,
-} from './util';
+import { fixRoundingError, isSmallIntInterval, mapSmallIntInterval } from './util';
+import { Arg, BinaryFn, UnaryFn, wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
 
 const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimitive> => {
     if (Number.isNaN(a.value)) return a;
@@ -55,7 +46,7 @@ const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimit
 
     return new IntervalType(min, max);
 };
-export const add = wrapVarArgs(ZERO, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const add = wrapReducerVarArgs(ZERO, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return addLiteral(a, b);
     if (b.type === 'literal') return addLiteral(b, a);
 
@@ -140,7 +131,7 @@ const multiplyLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberP
     if (a.value < 0) return interval(max, min);
     return interval(min, max);
 };
-export const multiply = wrapVarArgs(ONE, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const multiply = wrapReducerVarArgs(ONE, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return multiplyLiteral(a, b);
     if (b.type === 'literal') return multiplyLiteral(b, a);
 
@@ -300,7 +291,7 @@ const minimumIntInterval = (
     const intMax = Number.isInteger(b.min) ? b.min - 1 : Math.floor(b.min);
     return union(intInterval(a.min, intMax), interval(b.min, Math.min(a.max, b.max)));
 };
-export const minimum = wrapVarArgs(INF, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const minimum = wrapReducerVarArgs(INF, (a: NumberPrimitive, b: NumberPrimitive) => {
     if (a.type === 'literal') return minimumLiteral(a, b);
     if (b.type === 'literal') return minimumLiteral(b, a);
 
@@ -312,7 +303,7 @@ export const minimum = wrapVarArgs(INF, (a: NumberPrimitive, b: NumberPrimitive)
 
     return new IntervalType(Math.min(a.min, b.min), Math.min(a.max, b.max));
 });
-export const maximum = wrapVarArgs(NEG_INF, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const maximum = wrapReducerVarArgs(NEG_INF, (a: NumberPrimitive, b: NumberPrimitive) => {
     return negate(minimum(negate(a), negate(b)));
 });
 
