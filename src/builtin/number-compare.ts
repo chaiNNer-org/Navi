@@ -7,7 +7,7 @@ import {
     StructType,
 } from '../types';
 import { union } from '../union';
-import { Arg, wrapBinary } from './util';
+import { Arg, wrapBinary } from './wrap';
 
 type NonNan = NumericLiteralType | IntervalType | IntIntervalType;
 const handleNan = (
@@ -93,7 +93,7 @@ const lessThenReal = (a: NonNan, b: NonNan): Arg<StructType> => {
     }
     return BOOL_FALSE;
 };
-export const lessThan = wrapBinary<NumberPrimitive, StructType>((a, b) => {
+export const lessThan = wrapBinary((a: NumberPrimitive, b: NumberPrimitive) => {
     const aNan = handleNan(a);
     const bNan = handleNan(b);
 
@@ -117,7 +117,7 @@ const lessThenEqualReal = (a: NonNan, b: NonNan): Arg<StructType> => {
     }
     return BOOL_FALSE;
 };
-export const lessThanEqual = wrapBinary<NumberPrimitive, StructType>((a, b) => {
+export const lessThanEqual = wrapBinary((a: NumberPrimitive, b: NumberPrimitive) => {
     const aNan = handleNan(a);
     const bNan = handleNan(b);
 

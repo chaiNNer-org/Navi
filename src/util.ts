@@ -1,3 +1,5 @@
+export const EMPTY_ARRAY: readonly never[] = [];
+
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export const noop = () => {};
 
