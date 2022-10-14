@@ -2,14 +2,11 @@ import {
     abs,
     add,
     ceil,
-    concat,
     cos,
     degToRad,
     divide,
     exp,
     floor,
-    lessThan,
-    lessThanEqual,
     log,
     maximum,
     minimum,
@@ -21,8 +18,9 @@ import {
     round,
     sin,
     subtract,
-    toString,
-} from './builtin';
+} from './builtin/number';
+import { lessThan, lessThanEqual } from './builtin/number-compare';
+import { concat, toString } from './builtin/string';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { BuiltinFunctionDefinition, Scope, ScopeBuilder } from './scope';

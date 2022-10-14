@@ -1,4 +1,4 @@
-export * as builtin from './builtin';
+export * as builtin from './builtin/main';
 export * from './evaluate';
 export * from './expression';
 export * from './scope';
