@@ -10,7 +10,7 @@ import {
 import { parseExpression } from '../src/parse';
 import { SourceDocument } from '../src/source';
 import { AnyType, NeverType, NumberType, StringLiteralType, StringType, Type } from '../src/types';
-import { literal } from '../src/types-util';
+import { intInterval, literal } from '../src/types-util';
 import { without } from '../src/without';
 import {
     expressions,
@@ -160,6 +160,27 @@ describe('Builtin functions', () => {
             }
         });
     };
+    const testBinary2 = (name: string, data1: readonly Type[], data2: readonly Type[]) => {
+        describe(name, () => {
+            test('evaluate', () => {
+                const inputs = data1.flatMap((a) => data2.map((b) => [a, b] as const));
+
+                const actual = inputs
+                    .map((args) => new FunctionCallExpression(name, args))
+                    .map((e) => {
+                        let result;
+                        try {
+                            result = evaluate(e, scope).toString();
+                        } catch (error) {
+                            result = String(error);
+                        }
+                        return `${e.toString()} => ${result}`;
+                    })
+                    .join('\n');
+                expect(actual).toMatchSnapshot();
+            });
+        });
+    };
 
     testUnary('abs', numbers);
     testUnary('number::neg', numbers);
@@ -183,6 +204,20 @@ describe('Builtin functions', () => {
     testBinary('number::lte', numbers);
 
     testUnary('invStrSet', strings);
+    testBinary('string::includes', strings);
+    testBinary('string::startsWith', strings);
+    testBinary('string::endsWith', strings);
+    testBinary2('string::repeat', strings, [
+        literal(0),
+        literal(1),
+        literal(2),
+        literal(10),
+        literal(100),
+        intInterval(0, 1),
+        intInterval(2, 6),
+        intInterval(0, Infinity),
+        intInterval(-1, Infinity),
+    ]);
 });
 
 describe('Match', () => {

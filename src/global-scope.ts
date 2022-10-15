@@ -20,7 +20,8 @@ import {
     subtract,
 } from './builtin/number';
 import { lessThan, lessThanEqual } from './builtin/number-compare';
-import { concat, toString } from './builtin/string';
+import { concat, endsWith, includes, repeat, startsWith, toString } from './builtin/string';
+import { UINT } from './constants';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { BuiltinFunctionDefinition, Scope, ScopeBuilder } from './scope';
@@ -57,6 +58,10 @@ builder.add(binary('pow', pow, NumberType.instance, NumberType.instance));
 
 builder.add(varArgs('concat', concat, StringType.instance));
 builder.add(unary('toString', toString, union(StringType.instance, NumberType.instance)));
+builder.add(binary('string::repeat', repeat, StringType.instance, UINT));
+builder.add(binary('string::includes', includes, StringType.instance, StringType.instance));
+builder.add(binary('string::startsWith', startsWith, StringType.instance, StringType.instance));
+builder.add(binary('string::endsWith', endsWith, StringType.instance, StringType.instance));
 
 // function for syntax desugaring
 builder.add(unary('number::neg', negate, NumberType.instance));
