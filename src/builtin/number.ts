@@ -9,7 +9,12 @@ import {
 } from '../types';
 import { intInterval, interval, literal } from '../types-util';
 import { union } from '../union';
-import { fixRoundingError, isSmallIntInterval, mapSmallIntInterval } from './util';
+import {
+    fixRoundingError,
+    handleNumberLiterals,
+    isSmallIntInterval,
+    mapSmallIntInterval,
+} from './util';
 import { Arg, BinaryFn, UnaryFn, wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
 
 const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimitive> => {
@@ -419,11 +424,5 @@ export const pow = wrapBinary<NumberPrimitive>((a, b) => {
     // Python's ** behavior is super strange and inconsistent because the operations is implemented by the operants
     // via operator overloading. So this will only implement the part that all implementations should agree on and
     // none of the edge cases.
-
-    if (a.type === 'literal') return powLiteral(a.value, b);
-    if (a.type === 'int-interval' && isSmallIntInterval(a)) {
-        return mapSmallIntInterval(a, (i) => powLiteral(i, b));
-    }
-
-    return NumberType.instance;
+    return handleNumberLiterals(a, NumberType.instance, (i) => powLiteral(i, b));
 });
