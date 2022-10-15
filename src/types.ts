@@ -9,6 +9,9 @@ export type PrimitiveType = NumberPrimitive | StringPrimitive;
 export type NumberPrimitive = NumberType | NumericLiteralType | IntervalType | IntIntervalType;
 export type StringPrimitive = StringType | StringLiteralType | InvertedStringSetType;
 
+// Integers are very useful and very common, so they get their own type alias.
+export type Int = NumericLiteralType | IntIntervalType;
+
 /**
  * A de-duplicated and sorted array of types.
  */

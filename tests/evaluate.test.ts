@@ -10,7 +10,7 @@ import {
 import { parseExpression } from '../src/parse';
 import { SourceDocument } from '../src/source';
 import { AnyType, NeverType, NumberType, StringLiteralType, StringType, Type } from '../src/types';
-import { literal } from '../src/types-util';
+import { intInterval, literal } from '../src/types-util';
 import { without } from '../src/without';
 import {
     expressions,
@@ -72,9 +72,9 @@ describe('without', () => {
 });
 
 describe('Builtin functions', () => {
-    const testUnaryNumber = (name: string) => {
+    const testUnary = (name: string, data: readonly Type[]) => {
         test(name, () => {
-            const actual = [...numbers, ...sets]
+            const actual = [...data, ...sets]
                 .map((e) => new FunctionCallExpression(name, [e]))
                 .map((e) => {
                     let result;
@@ -89,32 +89,18 @@ describe('Builtin functions', () => {
             expect(actual).toMatchSnapshot();
         });
     };
-    const testUnaryString = (name: string) => {
-        test(name, () => {
-            const actual = [...strings, ...sets]
-                .map((e) => new FunctionCallExpression(name, [e]))
-                .map((e) => {
-                    let result;
-                    try {
-                        result = evaluate(e, scope).toString();
-                    } catch (error) {
-                        result = String(error);
-                    }
-                    return `${e.toString()} => ${result}`;
-                })
-                .join('\n');
-            expect(actual).toMatchSnapshot();
-        });
-    };
-    const testBinaryNumber = (
+    const testBinary = (
         name: string,
-        properties: { commutative: boolean; reflexive: boolean; associative: boolean }
+        data: readonly Type[],
+        {
+            commutative = false,
+            reflexive = false,
+            associative = false,
+        }: { commutative?: boolean; reflexive?: boolean; associative?: boolean } = {}
     ) => {
         describe(name, () => {
             test('evaluate', () => {
-                const inputs = properties.commutative
-                    ? unorderedPairs(numbers)
-                    : orderedPairs(numbers);
+                const inputs = commutative ? unorderedPairs(data) : orderedPairs(data);
 
                 const actual = inputs
                     .map((args) => new FunctionCallExpression(name, args))
@@ -131,10 +117,10 @@ describe('Builtin functions', () => {
                 expect(actual).toMatchSnapshot();
             });
 
-            if (properties.commutative) {
+            if (commutative) {
                 test('commutative', () => {
-                    for (const a of numbers) {
-                        for (const b of numbers) {
+                    for (const a of data) {
+                        for (const b of data) {
                             assertSame(
                                 new FunctionCallExpression(name, [a, b]),
                                 new FunctionCallExpression(name, [b, a])
@@ -144,19 +130,19 @@ describe('Builtin functions', () => {
                 });
             }
 
-            if (properties.reflexive) {
+            if (reflexive) {
                 test('reflexive', () => {
-                    for (const a of numbers) {
+                    for (const a of data) {
                         assertSame(a, new FunctionCallExpression(name, [a, a]));
                     }
                 });
             }
 
-            if (properties.associative) {
+            if (associative) {
                 test('associative', () => {
-                    for (const a of numbers) {
-                        for (const b of numbers) {
-                            for (const c of numbers) {
+                    for (const a of data) {
+                        for (const b of data) {
+                            for (const c of data) {
                                 assertSame(
                                     new FunctionCallExpression(name, [
                                         a,
@@ -174,29 +160,64 @@ describe('Builtin functions', () => {
             }
         });
     };
+    const testBinary2 = (name: string, data1: readonly Type[], data2: readonly Type[]) => {
+        describe(name, () => {
+            test('evaluate', () => {
+                const inputs = data1.flatMap((a) => data2.map((b) => [a, b] as const));
 
-    testUnaryNumber('abs');
-    testUnaryNumber('number::neg');
-    testUnaryNumber('round');
-    testUnaryNumber('floor');
-    testUnaryNumber('number::rec');
+                const actual = inputs
+                    .map((args) => new FunctionCallExpression(name, args))
+                    .map((e) => {
+                        let result;
+                        try {
+                            result = evaluate(e, scope).toString();
+                        } catch (error) {
+                            result = String(error);
+                        }
+                        return `${e.toString()} => ${result}`;
+                    })
+                    .join('\n');
+                expect(actual).toMatchSnapshot();
+            });
+        });
+    };
 
-    testUnaryNumber('degToRad');
-    testUnaryNumber('sin');
-    testUnaryNumber('cos');
+    testUnary('abs', numbers);
+    testUnary('number::neg', numbers);
+    testUnary('round', numbers);
+    testUnary('floor', numbers);
+    testUnary('number::rec', numbers);
 
-    testUnaryNumber('exp');
-    testUnaryNumber('log');
+    testUnary('degToRad', numbers);
+    testUnary('sin', numbers);
+    testUnary('cos', numbers);
 
-    testBinaryNumber('min', { commutative: true, reflexive: true, associative: true });
-    testBinaryNumber('number::add', { commutative: true, reflexive: false, associative: false });
-    testBinaryNumber('number::mul', { commutative: true, reflexive: false, associative: false });
-    testBinaryNumber('mod', { commutative: false, reflexive: false, associative: false });
-    testBinaryNumber('pow', { commutative: false, reflexive: false, associative: false });
-    testBinaryNumber('number::lt', { commutative: false, reflexive: false, associative: false });
-    testBinaryNumber('number::lte', { commutative: false, reflexive: false, associative: false });
+    testUnary('exp', numbers);
+    testUnary('log', numbers);
 
-    testUnaryString('invStrSet');
+    testBinary('min', numbers, { commutative: true, reflexive: true, associative: true });
+    testBinary('number::add', numbers, { commutative: true, reflexive: false, associative: false });
+    testBinary('number::mul', numbers, { commutative: true, reflexive: false, associative: false });
+    testBinary('mod', numbers);
+    testBinary('pow', numbers);
+    testBinary('number::lt', numbers);
+    testBinary('number::lte', numbers);
+
+    testUnary('invStrSet', strings);
+    testBinary('string::includes', strings);
+    testBinary('string::startsWith', strings);
+    testBinary('string::endsWith', strings);
+    testBinary2('string::repeat', strings, [
+        literal(0),
+        literal(1),
+        literal(2),
+        literal(10),
+        literal(100),
+        intInterval(0, 1),
+        intInterval(2, 6),
+        intInterval(0, Infinity),
+        intInterval(-1, Infinity),
+    ]);
 });
 
 describe('Match', () => {
