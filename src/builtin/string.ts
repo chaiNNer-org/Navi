@@ -1,30 +1,7 @@
 import { BOOL, BOOL_FALSE, BOOL_TRUE, EMPTY_STR } from '../constants';
-import {
-    Int,
-    NumberPrimitive,
-    StringLiteralType,
-    StringPrimitive,
-    StringType,
-    ValueType,
-} from '../types';
-import { union } from '../union';
-import { Arg, wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
-
-const numberLiteral = <R extends ValueType>(
-    value: NumberPrimitive,
-    defaultValue: R,
-    fn: (n: number) => Arg<R>
-): Arg<R> => {
-    if (value.type === 'literal') return fn(value.value);
-    if (value.type === 'int-interval' && value.max - value.min <= 10) {
-        const items: Arg<R>[] = [];
-        for (let i = value.min; i <= value.max; i += 1) {
-            items.push(fn(i));
-        }
-        return union(...items) as Arg<R>;
-    }
-    return defaultValue;
-};
+import { Int, NumberPrimitive, StringLiteralType, StringPrimitive, StringType } from '../types';
+import { handleNumberLiterals } from './util';
+import { wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
 
 export const toString = wrapUnary<StringPrimitive | NumberPrimitive, StringPrimitive>((a) => {
     if (a.underlying === 'string') return a;
@@ -50,7 +27,7 @@ export const concat = wrapReducerVarArgs(EMPTY_STR, (a, b) => {
 export const repeat = wrapBinary((text: StringPrimitive, count: Int) => {
     if (text.type === 'literal' && text.value === '') return EMPTY_STR;
 
-    return numberLiteral<StringPrimitive>(count, StringType.instance, (i) => {
+    return handleNumberLiterals<StringPrimitive>(count, StringType.instance, (i) => {
         if (i === 0) return EMPTY_STR;
         if (i === 1) return text;
 

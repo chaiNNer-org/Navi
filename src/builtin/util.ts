@@ -1,4 +1,4 @@
-import { IntIntervalType, NumberPrimitive } from '../types';
+import { IntIntervalType, NumberPrimitive, ValueType } from '../types';
 import { union } from '../union';
 import { Arg } from './wrap';
 
@@ -30,4 +30,20 @@ export const mapSmallIntInterval = (
         items.push(mapFn(i));
     }
     return union(...items);
+};
+
+export const handleNumberLiterals = <R extends ValueType>(
+    value: NumberPrimitive,
+    defaultValue: R,
+    fn: (n: number) => Arg<R>
+): Arg<R> => {
+    if (value.type === 'literal') return fn(value.value);
+    if (value.type === 'int-interval' && value.max - value.min <= 10) {
+        const items: Arg<R>[] = [];
+        for (let i = value.min; i <= value.max; i += 1) {
+            items.push(fn(i));
+        }
+        return union(...items) as Arg<R>;
+    }
+    return defaultValue;
 };
