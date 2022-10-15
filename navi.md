@@ -375,6 +375,16 @@ The following built-in functions are supported:
 
     Takes any number of strings and returns their concatenation.
 
+-   `string::repeat(text: string, count: uint) -> string`
+
+    Repeats the given text `count` times.
+
+-   `string::include(text: string, needle: string) -> bool` <br>
+    `string::startsWith(text: string, needle: string) -> bool` <br>
+    `string::endsWidth(text: string, needle: string) -> bool`
+
+    These function what their JS equivalents do.
+
 ### Syntax sugar
 
 Special syntax is available for all `number::*` functions.
