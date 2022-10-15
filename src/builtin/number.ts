@@ -226,7 +226,6 @@ export const floor = wrapUnary((n: NumberPrimitive) => {
     return union(...items);
 });
 export const ceil: UnaryFn<NumberPrimitive> = (a) => negate(floor(negate(a)));
-export const degToRad: UnaryFn<NumberPrimitive> = (a) => multiply(a, literal(Math.PI / 180));
 
 const moduleLiteral = (a: NumberPrimitive, b: number): Arg<NumberPrimitive> => {
     if (b === 0) {

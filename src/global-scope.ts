@@ -3,7 +3,6 @@ import {
     add,
     ceil,
     cos,
-    degToRad,
     divide,
     exp,
     floor,
@@ -48,7 +47,6 @@ builder.add(unary('floor', floor, NumberType.instance));
 builder.add(unary('ceil', ceil, NumberType.instance));
 builder.add(binary('mod', modulo, NumberType.instance, NumberType.instance));
 
-builder.add(unary('degToRad', degToRad, NumberType.instance));
 builder.add(unary('sin', sin, NumberType.instance));
 builder.add(unary('cos', cos, NumberType.instance));
 
@@ -94,6 +92,12 @@ let bool = true | false;
 
 def number::gte(a: number, b: number) = number::lte(b, a);
 def number::gt(a: number, b: number) = number::lt(b, a);
+
+let number::PI = 3.141592653589793;
+let number::E = 2.718281828459045;
+
+def degToRad(deg: number) = deg * (number::PI / 180);
+def radToDeg(rad: number) = rad / (number::PI * 180);
 `;
 const definitions = parseDefinitions(new SourceDocument(code, 'global-internal'));
 for (const d of definitions) {
