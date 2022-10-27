@@ -6,6 +6,7 @@ import {
     IntervalType,
     InvertedStringSetType,
     NeverType,
+    NonNeverType,
     NonTrivialType,
     NumberPrimitive,
     NumberType,
@@ -278,7 +279,6 @@ export const unionValueTypes = (...types: ValueType[]): ValueType | UnionType | 
     return u.getResult();
 };
 
-type NonNever<T extends Type> = Exclude<T, NeverType>;
 type ClosedValueType<T extends ValueType> =
     | (T extends NumericLiteralType ? NumberPrimitive : never)
     | (T extends IntervalType ? NumberPrimitive : never)
@@ -295,8 +295,8 @@ type Closed<T extends Type> =
     | T;
 
 type Union2<A extends Type, B extends Type> =
-    | Closed<NonNever<A>>
-    | Closed<NonNever<B>>
+    | Closed<NonNeverType<A>>
+    | Closed<NonNeverType<B>>
     | (A extends NeverType ? (B extends NeverType ? NeverType : never) : never);
 type Union3<A extends Type, B extends Type, C extends Type> = Union2<A, Union2<B, C>>;
 type Union4<A extends Type, B extends Type, C extends Type, D extends Type> = Union2<
