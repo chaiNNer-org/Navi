@@ -41,6 +41,34 @@ abs(never) => never
 abs(any) => Error: Incompatible argument type: The supplied argument type any is not compatible with the definition type."
 `;
 
+exports[`Builtin functions any::eq evaluate 1`] = `
+"any::eq(false, false) => true
+any::eq(false, true) => false
+any::eq(false, false | true) => false | true
+any::eq(false, never) => never
+any::eq(false, any) => false | true
+any::eq(true, false) => false
+any::eq(true, true) => true
+any::eq(true, false | true) => false | true
+any::eq(true, never) => never
+any::eq(true, any) => false | true
+any::eq(false | true, false) => false | true
+any::eq(false | true, true) => false | true
+any::eq(false | true, false | true) => false | true
+any::eq(false | true, never) => never
+any::eq(false | true, any) => false | true
+any::eq(never, false) => never
+any::eq(never, true) => never
+any::eq(never, false | true) => never
+any::eq(never, never) => never
+any::eq(never, any) => never
+any::eq(any, false) => false | true
+any::eq(any, true) => false | true
+any::eq(any, false | true) => false | true
+any::eq(any, never) => never
+any::eq(any, any) => false | true"
+`;
+
 exports[`Builtin functions bool::and evaluate 1`] = `
 "bool::and(false, false) => false
 bool::and(false, true) => false

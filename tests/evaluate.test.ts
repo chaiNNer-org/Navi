@@ -223,6 +223,8 @@ describe('Builtin functions', () => {
     testBinary('bool::and', bools);
     testBinary('bool::or', bools);
     testUnary('bool::not', bools);
+
+    testBinary('any::eq', [...bools, NeverType.instance, AnyType.instance]);
 });
 
 describe('Match', () => {
