@@ -443,6 +443,23 @@ The problem is that `match` can be used to complement types, which breaks some a
 As a result, match arm patterns must be [static expression](#static-expressions).
 However, this restriction is not enforced right now.
 
+### `if`/`else`
+
+Navi's if-else expression is syntactic sugar for a boolean `match` expression.
+The following two expressions are equivalent:
+
+```
+if condition { a } else { b }
+
+match condition {
+    true => { a },
+    false => { b }
+}
+```
+
+Note that both branches require a scoped expression.
+The curly brackets are mandatory.
+
 ## Rules of the type system
 
 This is technical section intended for those implementing the type system.

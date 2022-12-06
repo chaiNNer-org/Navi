@@ -30,6 +30,7 @@ primaryExpression:
 	| Number
 	| String
 	| matchExpression
+	| ifExpression
 	| functionCall
 	| named
 	| scopeExpression
@@ -41,6 +42,8 @@ matchArm: (Discard | expression) (As Identifier)? '=>' expression;
 functionCall: name '(' args ')';
 named: name fields?;
 scopeExpression: '{' definition* expression '}';
+ifExpression:
+	If expression scopeExpression Else scopeExpression;
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 
@@ -82,6 +85,8 @@ As: 'as';
 Def: 'def';
 Let: 'let';
 Match: 'match';
+If: 'if';
+Else: 'else';
 Struct: 'struct';
 Enum: 'enum';
 
