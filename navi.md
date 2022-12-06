@@ -385,6 +385,17 @@ The following built-in functions are supported:
 
     These function what their JS equivalents do.
 
+-   `bool::and(...values: bool) -> bool` <br>
+    `bool::or(...values: bool) -> bool` <br>
+    `bool::not(value: bool) -> bool`
+
+    These functions implement basic logical operations.
+
+-   `any::eq(a: any, b: any) -> bool` <br>
+    `any::neq(a: any, b: any) -> bool`
+
+    Takes 2 values and returns whether the given values are equal.
+
 ### Syntax sugar
 
 Special syntax is available for all `number::*` functions.
@@ -396,6 +407,8 @@ This includes the following operators:
 
 Operator precedence is as you would expect it to be.
 E.g. `a + b * c` de-sugars to `number::add(a, number::mul(b, c))`.
+
+Syntax sugar is available for `any::eq` and `any::neq`. They use `==` and `!=` respectively.
 
 ## `match`
 
