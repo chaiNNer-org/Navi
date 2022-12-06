@@ -10328,7 +10328,40 @@ def foo(): int = 1.2; foo()
 =>> Error: Incompatible return type: The return value 1.2 is not allowed by the return type int(-inf..inf)
 
 def foo(): int = "1"; foo()
-=>> Error: Incompatible return type: The return value "1" is not allowed by the return type int(-inf..inf)"
+=>> Error: Incompatible return type: The return value "1" is not allowed by the return type int(-inf..inf)
+
+1 == 1
+=>> true
+
+1 != 1
+=>> false
+
+1 > 1
+=>> false
+
+1 >= 1
+=>> true
+
+1 < 1
+=>> false
+
+1 <= 1
+=>> true
+
+"foo" == "foo"
+=>> true
+
+"foo" == "bar"
+=>> false
+
+"foo" == bool
+=>> false
+
+true == true
+=>> true
+
+true != false
+=>> true"
 `;
 
 exports[`without evaluation 1`] = `

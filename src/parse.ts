@@ -274,6 +274,7 @@ class AstConverter {
         context:
             | Contexts['ExpressionDocumentContext']
             | Contexts['ExpressionContext']
+            | Contexts['ComparisonExpressionContext']
             | Contexts['UnionExpressionContext']
             | Contexts['IntersectionExpressionContext']
             | Contexts['AdditiveExpressionContext']
@@ -296,7 +297,25 @@ class AstConverter {
             return new ScopeExpression(definitions, expression);
         }
         if (context instanceof NaviParser.ExpressionContext) {
-            return this.toExpression(getRequired(context, 'unionExpression'));
+            return this.toExpression(getRequired(context, 'comparisonExpression'));
+        }
+        if (context instanceof NaviParser.ComparisonExpressionContext) {
+            const items = getMultiple(context, 'unionExpression').map(this.toExpression);
+            if (items.length === 1) return items[0];
+            const [lhs, rhs] = items;
+
+            const opToken = context.getChild(1) as Token;
+            const op = opToken.getText();
+
+            const functions: Record<string, string> = {
+                '==': 'any::eq',
+                '!=': 'any::neq',
+                '>': 'number::gt',
+                '>=': 'number::gte',
+                '<': 'number::lt',
+                '<=': 'number::lte',
+            };
+            return new FunctionCallExpression(functions[op], [lhs, rhs]);
         }
         if (context instanceof NaviParser.UnionExpressionContext) {
             const items = getMultiple(context, 'intersectionExpression').map(this.toExpression);

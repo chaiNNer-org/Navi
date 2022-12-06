@@ -295,6 +295,18 @@ test('Snippet evaluation', () => {
         String.raw`def foo(): int = 4; foo()`,
         String.raw`def foo(): int = 1.2; foo()`,
         String.raw`def foo(): int = "1"; foo()`,
+
+        String.raw`1 == 1`,
+        String.raw`1 != 1`,
+        String.raw`1 > 1`,
+        String.raw`1 >= 1`,
+        String.raw`1 < 1`,
+        String.raw`1 <= 1`,
+        String.raw`"foo" == "foo"`,
+        String.raw`"foo" == "bar"`,
+        String.raw`"foo" == bool`,
+        String.raw`true == true`,
+        String.raw`true != false`,
     ];
 
     const actual = snippets
