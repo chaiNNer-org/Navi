@@ -85,6 +85,10 @@ const expressionSnippets: string[] = [
     String.raw`match a { 1 | 2 as foo => add(foo, 1), "bar" => "baz", _ as foo => foo, }`,
     String.raw`match a { foo::bar => baz, }`,
 
+    // if
+    String.raw`if a { 1 } else { 2 }`,
+    String.raw`if (a) { 1 } else { 2 }`,
+
     // field access
     String.raw`a.b.c.d.e.f`,
     String.raw`foo::bar.baz`,
@@ -198,6 +202,11 @@ const invalidExpressionSnippets: string[] = [
     String.raw`match a`,
     String.raw`match a { foo: uint }`,
     String.raw`match a { foo as bar::baz }`,
+
+    // if
+    String.raw`if a`,
+    String.raw`if a 1 else 2`,
+    String.raw`if a { 2 }`,
 
     // field access
     String.raw`a.match`,

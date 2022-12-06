@@ -131,6 +131,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#ifExpression.
+	enterIfExpression(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#ifExpression.
+	exitIfExpression(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#fieldAccessExpression.
 	enterFieldAccessExpression(ctx) {
 	}

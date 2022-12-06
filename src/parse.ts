@@ -1,6 +1,7 @@
 import antlr4 from 'antlr4';
 import NaviLexer from './antlr4/NaviLexer';
 import NaviParser from './antlr4/NaviParser';
+import { BOOL_FALSE, BOOL_TRUE } from './constants';
 import {
     Definition,
     Expression,
@@ -284,6 +285,7 @@ class AstConverter {
             | Contexts['PrimaryExpressionContext']
             | Contexts['FunctionCallContext']
             | Contexts['MatchExpressionContext']
+            | Contexts['IfExpressionContext']
             | Contexts['NamedContext']
             | Contexts['ScopeExpressionContext']
     ): Expression {
@@ -382,6 +384,7 @@ class AstConverter {
                 getOptional(context, 'scopeExpression') ??
                 getOptional(context, 'functionCall') ??
                 getOptional(context, 'matchExpression') ??
+                getOptional(context, 'ifExpression') ??
                 getOptional(context, 'named');
             if (!rule) throw new ConversionError(context, `No known rule or token`);
             return this.toExpression(rule);
@@ -432,6 +435,16 @@ class AstConverter {
                     return new MatchArm(this.toExpression(pattern), binding, this.toExpression(to));
                 })
             );
+        }
+        if (context instanceof NaviParser.IfExpressionContext) {
+            const condition = this.toExpression(getRequired(context, 'expression'));
+            const [trueBranch, falseBranch] = getMultiple(context, 'scopeExpression').map(
+                this.toExpression
+            );
+            return new MatchExpression(condition, [
+                new MatchArm(BOOL_TRUE, undefined, trueBranch),
+                new MatchArm(BOOL_FALSE, undefined, falseBranch),
+            ]);
         }
 
         return assertNever(context);
