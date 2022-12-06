@@ -1,3 +1,4 @@
+import { equal } from './builtin/any';
 import { and, or } from './builtin/bool';
 import {
     abs,
@@ -62,9 +63,6 @@ builder.add(binary('string::includes', includes, StringType.instance, StringType
 builder.add(binary('string::startsWith', startsWith, StringType.instance, StringType.instance));
 builder.add(binary('string::endsWith', endsWith, StringType.instance, StringType.instance));
 
-builder.add(varArgs('bool::and', and, BOOL));
-builder.add(varArgs('bool::or', or, BOOL));
-
 // function for syntax desugaring
 builder.add(unary('number::neg', negate, NumberType.instance));
 builder.add(varArgs('number::add', add, NumberType.instance));
@@ -74,6 +72,11 @@ builder.add(binary('number::div', divide, NumberType.instance, NumberType.instan
 builder.add(unary('number::rec', reciprocal, NumberType.instance));
 builder.add(binary('number::lt', lessThan, NumberType.instance, NumberType.instance));
 builder.add(binary('number::lte', lessThanEqual, NumberType.instance, NumberType.instance));
+
+builder.add(varArgs('bool::and', and, BOOL));
+builder.add(varArgs('bool::or', or, BOOL));
+
+builder.add(binary('any::eq', equal, AnyType.instance, AnyType.instance));
 
 const code = `
 // invStrSet is an interesting function, because it cannot be a built-in function.
@@ -95,6 +98,8 @@ struct false;
 let bool = true | false;
 
 def bool::not(value: bool): bool = match value { true => false, false => true };
+
+def any::neq(a: any, b: any) = bool::not(any::eq(a, b));
 
 def number::gte(a: number, b: number): bool = number::lte(b, a);
 def number::gt(a: number, b: number): bool = number::lt(b, a);
