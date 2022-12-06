@@ -1,3 +1,4 @@
+import { BOOL, BOOL_FALSE, BOOL_TRUE } from '../src/constants';
 import {
     Expression,
     FieldAccessExpression,
@@ -100,6 +101,7 @@ export const strings: readonly (StringPrimitive | UnionType<StringPrimitive>)[] 
     new InvertedStringSetType(new Set(['foo', 'bar'])),
     new InvertedStringSetType(new Set(['bar'])),
 ];
+export const bools: readonly (StructType | UnionType<StructType>)[] = [BOOL_FALSE, BOOL_TRUE, BOOL];
 export const structs: readonly (StructType | UnionType<StructType>)[] = [
     new StructType('null'),
 

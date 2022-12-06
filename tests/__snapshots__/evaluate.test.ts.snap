@@ -41,6 +41,38 @@ abs(never) => never
 abs(any) => Error: Incompatible argument type: The supplied argument type any is not compatible with the definition type."
 `;
 
+exports[`Builtin functions bool::and evaluate 1`] = `
+"bool::and(false, false) => false
+bool::and(false, true) => false
+bool::and(false, false | true) => false
+bool::and(true, false) => false
+bool::and(true, true) => true
+bool::and(true, false | true) => false | true
+bool::and(false | true, false) => false
+bool::and(false | true, true) => false | true
+bool::and(false | true, false | true) => false | true"
+`;
+
+exports[`Builtin functions bool::not 1`] = `
+"bool::not(false) => true
+bool::not(true) => false
+bool::not(false | true) => false | true
+bool::not(never) => never
+bool::not(any) => Error: Incompatible argument type: The supplied argument type any is not compatible with the definition type."
+`;
+
+exports[`Builtin functions bool::or evaluate 1`] = `
+"bool::or(false, false) => false
+bool::or(false, true) => true
+bool::or(false, false | true) => false | true
+bool::or(true, false) => true
+bool::or(true, true) => true
+bool::or(true, false | true) => true
+bool::or(false | true, false) => false | true
+bool::or(false | true, true) => true
+bool::or(false | true, false | true) => false | true"
+`;
+
 exports[`Builtin functions cos 1`] = `
 "cos(number) => nan | -1..1
 cos(-3.14) => -0.9999987317275395
