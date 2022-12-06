@@ -95,6 +95,17 @@ const expressionSnippets: string[] = [
     String.raw`a & b & c & d`,
     String.raw`a & b | c & d`,
 
+    // comparisons
+    String.raw`a == b`,
+    String.raw`a != b`,
+    String.raw`a > b`,
+    String.raw`a >= b`,
+    String.raw`a < b`,
+    String.raw`a <= b`,
+    String.raw`a == b & c`,
+    String.raw`a == b | c`,
+    String.raw`a == b * c`,
+
     // arithmetic
     String.raw`a + b - c + d - e + f`,
     String.raw`a * b / c * d / e * f`,
@@ -204,6 +215,14 @@ const invalidExpressionSnippets: string[] = [
     String.raw`a & b &`,
     String.raw`| b`,
     String.raw`& b`,
+
+    // comparisons
+    String.raw`a === b`,
+    String.raw`a !== b`,
+    String.raw`a == b | c == d`,
+    String.raw`a == b & c == d`,
+    String.raw`a == b || c == d`,
+    String.raw`a == b && c == d`,
 
     // arithmetic
     String.raw`a-`,

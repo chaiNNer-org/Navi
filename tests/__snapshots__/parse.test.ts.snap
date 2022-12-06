@@ -218,6 +218,33 @@ a & b & c & d
 >>> a & b | c & d
 (a & b) | (c & d)
 
+>>> a == b
+any::eq(a, b)
+
+>>> a != b
+any::neq(a, b)
+
+>>> a > b
+number::gt(a, b)
+
+>>> a >= b
+number::gte(a, b)
+
+>>> a < b
+number::lt(a, b)
+
+>>> a <= b
+number::lte(a, b)
+
+>>> a == b & c
+any::eq(a, b & c)
+
+>>> a == b | c
+any::eq(a, b | c)
+
+>>> a == b * c
+any::eq(a, number::mul(b, c))
+
 >>> a + b - c + d - e + f
 number::add(a, b, number::neg(c), d, number::neg(e), f)
 
@@ -446,6 +473,24 @@ SyntaxError: At 1:0: extraneous input '|' expecting {'{', '(', 'def', 'let', 'ma
 
 >>> & b
 SyntaxError: At 1:0: extraneous input '&' expecting {'{', '(', 'def', 'let', 'match', 'struct', 'enum', IntInterval, Interval, Number, String, Identifier, '-'}
+
+>>> a === b
+SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'match', IntInterval, Interval, Number, String, Identifier, '-'}
+
+>>> a !== b
+SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'match', IntInterval, Interval, Number, String, Identifier, '-'}
+
+>>> a == b | c == d
+SyntaxError: At 1:11: mismatched input '==' expecting <EOF>
+
+>>> a == b & c == d
+SyntaxError: At 1:11: mismatched input '==' expecting <EOF>
+
+>>> a == b || c == d
+SyntaxError: At 1:8: extraneous input '|' expecting {'{', '(', 'match', IntInterval, Interval, Number, String, Identifier, '-'}
+
+>>> a == b && c == d
+SyntaxError: At 1:8: extraneous input '&' expecting {'{', '(', 'match', IntInterval, Interval, Number, String, Identifier, '-'}
 
 >>> a-
 SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'match', IntInterval, Interval, Number, String, Identifier, '-'}

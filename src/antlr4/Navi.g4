@@ -60,7 +60,12 @@ intersectionExpression:
 unionExpression:
 	intersectionExpression ('|' intersectionExpression)*;
 
-expression: unionExpression;
+comparisonExpression:
+	unionExpression (
+		(OpEqual | OpNotEqual | OpGt | OpGte | OpLt | OpLte) unionExpression
+	)?;
+
+expression: comparisonExpression;
 
 // misc
 args: (expression (',' expression)* ','?)?;
@@ -103,6 +108,12 @@ OpMinus: '-';
 OpPlus: '+';
 OpMult: '*';
 OpDiv: '/';
+OpEqual: '==';
+OpNotEqual: '!=';
+OpGt: '>';
+OpLt: '<';
+OpGte: '>=';
+OpLte: '<=';
 
 // skip
 Space: [ \t\r\n]+ -> skip;

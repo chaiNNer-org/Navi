@@ -185,6 +185,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#comparisonExpression.
+	enterComparisonExpression(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#comparisonExpression.
+	exitComparisonExpression(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#expression.
 	enterExpression(ctx) {
 	}
