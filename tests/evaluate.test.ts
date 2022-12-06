@@ -13,6 +13,7 @@ import { AnyType, NeverType, NumberType, StringLiteralType, StringType, Type } f
 import { intInterval, literal } from '../src/types-util';
 import { without } from '../src/without';
 import {
+    bools,
     expressions,
     numbers,
     orderedPairs,
@@ -218,6 +219,10 @@ describe('Builtin functions', () => {
         intInterval(0, Infinity),
         intInterval(-1, Infinity),
     ]);
+
+    testBinary('bool::and', bools);
+    testBinary('bool::or', bools);
+    testUnary('bool::not', bools);
 });
 
 describe('Match', () => {

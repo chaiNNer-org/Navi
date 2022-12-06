@@ -1,3 +1,4 @@
+import { and, or } from './builtin/bool';
 import {
     abs,
     add,
@@ -20,7 +21,7 @@ import {
 } from './builtin/number';
 import { lessThan, lessThanEqual } from './builtin/number-compare';
 import { concat, endsWith, includes, repeat, startsWith, toString } from './builtin/string';
-import { UINT } from './constants';
+import { BOOL, UINT } from './constants';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { BuiltinFunctionDefinition, Scope, ScopeBuilder } from './scope';
@@ -61,6 +62,9 @@ builder.add(binary('string::includes', includes, StringType.instance, StringType
 builder.add(binary('string::startsWith', startsWith, StringType.instance, StringType.instance));
 builder.add(binary('string::endsWith', endsWith, StringType.instance, StringType.instance));
 
+builder.add(varArgs('bool::and', and, BOOL));
+builder.add(varArgs('bool::or', or, BOOL));
+
 // function for syntax desugaring
 builder.add(unary('number::neg', negate, NumberType.instance));
 builder.add(varArgs('number::add', add, NumberType.instance));
@@ -90,8 +94,10 @@ struct true;
 struct false;
 let bool = true | false;
 
-def number::gte(a: number, b: number) = number::lte(b, a);
-def number::gt(a: number, b: number) = number::lt(b, a);
+def bool::not(value: bool): bool = match value { true => false, false => true };
+
+def number::gte(a: number, b: number): bool = number::lte(b, a);
+def number::gt(a: number, b: number): bool = number::lt(b, a);
 
 let number::PI = 3.141592653589793;
 let number::E = 2.718281828459045;
