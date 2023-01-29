@@ -359,9 +359,12 @@ The following built-in functions are supported:
 
     Takes 2 numbers and compares them.
 
--   `round(a: number) -> number`
+-   `round(a: number) -> int | nan | inf | -inf` <br>
+    `floor(a: number) -> int | nan | inf | -inf` <br>
+    `ceil(a: number) -> int | nan | inf | -inf`
 
-    Takes a number type and returns the type that represents the nearest whole numbers to the given numbers. The behavior is consistent with JavaScript's `Math.round(a)`.
+    Takes a number type and returns the type that represents the nearest whole numbers to the given numbers.
+    The behavior is consistent with JavaScript's `Math.round(a)`, `Math.floor(a)`, and `Math.ceil(a)` respectively.
 
 -   `min(...numbers: number) -> number`
 
