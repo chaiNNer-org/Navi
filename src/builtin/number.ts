@@ -15,7 +15,15 @@ import {
     isSmallIntInterval,
     mapSmallIntInterval,
 } from './util';
-import { Arg, BinaryFn, UnaryFn, wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
+import {
+    Arg,
+    BinaryFn,
+    UnaryFn,
+    wrapAssociativeCommutativeReducerVarArgs,
+    wrapBinary,
+    wrapReducerVarArgs,
+    wrapUnary,
+} from './wrap';
 
 const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimitive> => {
     if (Number.isNaN(a.value)) return a;
@@ -51,7 +59,7 @@ const addLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimit
 
     return new IntervalType(min, max);
 };
-export const add = wrapReducerVarArgs(ZERO, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const add = wrapAssociativeCommutativeReducerVarArgs(ZERO, (a, b) => {
     if (a.type === 'literal') return addLiteral(a, b);
     if (b.type === 'literal') return addLiteral(b, a);
 
@@ -136,7 +144,7 @@ const multiplyLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberP
     if (a.value < 0) return interval(max, min);
     return interval(min, max);
 };
-export const multiply = wrapReducerVarArgs(ONE, (a: NumberPrimitive, b: NumberPrimitive) => {
+export const multiply = wrapAssociativeCommutativeReducerVarArgs(ONE, (a, b) => {
     if (a.type === 'literal') return multiplyLiteral(a, b);
     if (b.type === 'literal') return multiplyLiteral(b, a);
 
