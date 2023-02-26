@@ -38,6 +38,7 @@ primaryExpression:
 	| ifExpression
 	| functionCall
 	| named
+	| structExpression
 	| scopeExpression
 	| '(' expression ')';
 
@@ -45,7 +46,8 @@ matchExpression:
 	Match expression '{' (matchArm (',' matchArm)* ','?)? '}';
 matchArm: (Discard | expression) (As Identifier)? '=>' expression;
 functionCall: name '(' args ')';
-named: name fields?;
+named: name;
+structExpression: name fields;
 scopeExpression: '{' definition* expression '}';
 ifExpression:
 	If expression scopeExpression Else scopeExpression;

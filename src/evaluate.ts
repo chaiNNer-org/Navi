@@ -6,9 +6,10 @@ import {
     MatchArm,
     MatchExpression,
     NamedExpression,
-    NamedExpressionField,
     ScopeExpression,
     StructDefinition,
+    StructExpression,
+    StructExpressionField,
     VariableDefinition,
 } from './expression';
 import { intersect } from './intersection';
@@ -33,9 +34,9 @@ import { without } from './without';
 export type ErrorDetails =
     | {
           type: 'Unknown struct field';
-          expression: NamedExpression;
+          expression: StructExpression;
           definition: StructDefinition;
-          field: NamedExpressionField;
+          field: StructExpressionField;
           message: string;
       }
     | {
@@ -56,7 +57,7 @@ export type ErrorDetails =
       }
     | {
           type: 'Not a struct';
-          expression: NamedExpression;
+          expression: StructExpression;
           message: string;
       }
     | {
@@ -66,13 +67,19 @@ export type ErrorDetails =
           message: string;
       }
     | {
+          type: 'Unknown struct';
+          expression: StructExpression;
+          similarNames: string[];
+          message: string;
+      }
+    | {
           type: 'Cannot reference function';
-          expression: NamedExpression;
+          expression: NamedExpression | StructExpression;
           message: string;
       }
     | {
           type: 'Incompatible field type';
-          expression: NamedExpression;
+          expression: StructExpression;
           definition: StructDefinition;
           field: {
               name: string;
@@ -135,6 +142,44 @@ export class EvaluationError extends Error {
     }
 }
 
+const resolveStruct = (
+    expression: StructExpression,
+    currentScope: Scope
+): ResolvedName<ScopeStructDefinition> => {
+    let resolved;
+    try {
+        resolved = currentScope.get(expression.name);
+    } catch (error: unknown) {
+        if (error instanceof NameResolutionError) {
+            throw new EvaluationError({
+                type: 'Unknown struct',
+                expression,
+                similarNames: error.similar,
+                message: error.message,
+            });
+        }
+        throw error;
+    }
+
+    const { definition, scope } = resolved;
+    if (definition.type === 'function' || definition.type === 'intrinsic-function') {
+        throw new EvaluationError({
+            type: 'Cannot reference function',
+            expression,
+            message: `The name ${expression.name} resolves to a ${resolved.definition.type} and not a struct.`,
+        });
+    }
+
+    if (definition.type === 'parameter' || definition.type === 'variable') {
+        throw new EvaluationError({
+            type: 'Not a struct',
+            expression,
+            message: `${expression.name} is a ${definition.type} and does not support struct fields.`,
+        });
+    }
+
+    return { definition, scope };
+};
 const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructType | NeverType => {
     const fields: StructTypeField[] = [];
     for (const f of def.fields) {
@@ -157,8 +202,8 @@ const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructTy
     }
     return new StructType(def.name, fields);
 };
-const evaluateStruct = (
-    expression: NamedExpression,
+const evaluateStructImpl = (
+    expression: StructExpression,
     scope: Scope,
     definition: ScopeStructDefinition,
     definitionScope: Scope
@@ -213,6 +258,10 @@ const evaluateStruct = (
         fields.push(new StructTypeField(dField.name, type));
     }
     return new StructType(expression.name, fields);
+};
+const evaluateStruct = (expression: StructExpression, scope: Scope): Type => {
+    const { definition, scope: definitionScope } = resolveStruct(expression, scope);
+    return evaluateStructImpl(expression, scope, definition, definitionScope);
 };
 
 const resolveNamed = (
@@ -278,19 +327,11 @@ const evaluateNamed = (expression: NamedExpression, scope: Scope): Type => {
 
     // variable
     if (definition.type === 'variable') {
-        if (expression.fields.length > 0) {
-            throw new EvaluationError({
-                type: 'Not a struct',
-                expression,
-                message: `${expression.name} is a variable and does not support struct fields.`,
-            });
-        }
-
         return evaluateVariable(definition, definitionScope);
     }
 
     // struct
-    return evaluateStruct(expression, scope, definition, definitionScope);
+    return evaluateStructImpl(expression.toStruct(), scope, definition, definitionScope);
 };
 
 const evaluateFieldAccess = (expression: FieldAccessExpression, scope: Scope): Type => {
@@ -516,6 +557,8 @@ export const evaluate = (expression: Expression, scope: Scope): Type => {
     switch (expression.type) {
         case 'named':
             return evaluateNamed(expression, scope);
+        case 'struct':
+            return evaluateStruct(expression, scope);
         case 'union':
             return union(...expression.items.map((e) => evaluate(e, scope)));
         case 'intersection':

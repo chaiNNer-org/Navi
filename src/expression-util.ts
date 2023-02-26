@@ -2,10 +2,6 @@ import { Definition, Expression } from './expression';
 import { assertNever } from './util';
 
 export function* getReferences(expression: Expression | Definition): Iterable<string> {
-    if (expression.type === 'named') {
-        yield expression.name;
-    }
-
     if (expression.underlying === 'expression') {
         switch (expression.type) {
             case 'intersection':
@@ -15,6 +11,10 @@ export function* getReferences(expression: Expression | Definition): Iterable<st
                 }
                 break;
             case 'named':
+                yield expression.name;
+                break;
+            case 'struct':
+                yield expression.name;
                 for (const f of expression.fields) {
                     yield* getReferences(f.type);
                 }
