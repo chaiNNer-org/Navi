@@ -319,27 +319,6 @@ export const maximum = wrapReducerVarArgs(NEG_INF, (a: NumberPrimitive, b: Numbe
     return negate(minimum(negate(a), negate(b)));
 });
 
-export const abs = wrapUnary<NumberPrimitive>((a) => {
-    if (a.type === 'literal') return literal(Math.abs(a.value));
-    if (a.type === 'number') return union(NAN, interval(0, Infinity));
-
-    let min;
-    let max;
-    if (a.min > 0) {
-        min = a.min;
-        max = a.max;
-    } else if (a.max < 0) {
-        min = -a.max;
-        max = -a.min;
-    } else {
-        min = 0;
-        max = Math.max(Math.abs(a.min), Math.abs(a.max));
-    }
-
-    if (a.type === 'int-interval') return intInterval(min, max);
-    return interval(min, max);
-});
-
 export const sin = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
     if (a.type === 'literal') return literal(Math.sin(a.value));
     if (a.type === 'number') return union(NAN, interval(-1, 1));
