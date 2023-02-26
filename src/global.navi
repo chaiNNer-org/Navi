@@ -33,7 +33,7 @@ intrinsic def min(...values: number): number;
 intrinsic def max(...values: number): number;
 
 /// Returns the absolute value of the given number.
-def abs(a: number): number {
+def abs(a: number): 0..inf | nan {
     match a {
         -inf..0 => -a,
         _ => a,
@@ -50,11 +50,11 @@ intrinsic def floor(a: number): int | nan | inf | -inf;
 /// The behavior is consistent with JavaScript's `Math.ceil(a)`.
 intrinsic def ceil(a: number): int | nan | inf | -inf;
 
-intrinsic def number::sin(a: number): number;
-intrinsic def number::cos(a: number): number;
+intrinsic def number::sin(a: number): -1..1 | nan;
+intrinsic def number::cos(a: number): -1..1 | nan;
 def number::tan(a: number): number = number::sin(a) / number::cos(a);
 
-intrinsic def number::exp(a: number): number;
+intrinsic def number::exp(a: number): 0..inf | nan;
 intrinsic def number::log(a: number): number;
 intrinsic def number::pow(a: number, b: number): number;
 
