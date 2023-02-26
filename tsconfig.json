@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
-    "noEmit": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "declaration": true,
 
     "noImplicitAny": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "target": "es6",
     "lib": ["es2019"],
     "allowJs": true,
