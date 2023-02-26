@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "newLine": "lf",
+    "noEmit": true,
 
     "noImplicitAny": true,
     "module": "CommonJS",
     "target": "es6",
+    "lib": ["es2019"],
     "allowJs": true,
     "checkJs": false,
     "strict": true,
