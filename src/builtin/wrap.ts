@@ -1,6 +1,6 @@
 import { NeverType, NumberPrimitive, StringPrimitive, UnionType, ValueType } from '../types';
 import { union } from '../union';
-import { EMPTY_ARRAY } from '../util';
+import { EMPTY_ARRAY, assertNever } from '../util';
 
 export type Arg<T extends ValueType> = T | UnionType<T> | NeverType;
 
@@ -162,3 +162,52 @@ export function wrapReducerVarArgs<T extends ValueType>(
         return result;
     };
 }
+
+const getComplexity = (n: Arg<NumberPrimitive>): number => {
+    switch (n.type) {
+        case 'never':
+            return 0;
+        case 'literal':
+            return 10;
+        case 'int-interval':
+            return 20;
+        case 'interval':
+            return 30;
+        case 'number':
+            return 40;
+        case 'union':
+            return 5 + n.items.reduce((a, b) => Math.max(a, getComplexity(b)), 0);
+        default:
+            return assertNever(n);
+    }
+};
+
+/**
+ * This function differs from {@link wrapReducerVarArgs} in that it will try to reduce widening.
+ *
+ * Navi function are allowed to return a superset of the actual result. This is what makes it
+ * possible for Navi to expressive, but it also creates problems. In particular, it breaks
+ * associativity.
+ *
+ * This function tries to makes this problem a little better. It will reorder arguments in hopes of
+ * reducing potential widening. In practice, it will process numeric literals before anything else.
+ */
+export const wrapAssociativeCommutativeReducerVarArgs = (
+    neutral: Arg<NumberPrimitive>,
+    fn: (a: NumberPrimitive, b: NumberPrimitive) => Arg<NumberPrimitive>
+): ReducerVarArgsFn<NumberPrimitive> => {
+    const binary = wrapBinary(fn);
+    return (...args) => {
+        if (args.length === 0) return neutral;
+        if (args.length === 1) return args[0];
+        if (args.length === 2) return binary(args[0], args[1]);
+
+        args.sort((a, b) => getComplexity(a) - getComplexity(b));
+
+        let result = args[0];
+        for (let i = 1; i < args.length; i += 1) {
+            result = binary(result, args[i]);
+        }
+        return result;
+    };
+};
