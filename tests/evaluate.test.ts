@@ -161,10 +161,13 @@ describe('Builtin functions', () => {
             }
         });
     };
-    const testBinary2 = (name: string, data1: readonly Type[], data2: readonly Type[]) => {
+    const testCall = (name: string, ...data: (readonly Type[])[]) => {
         describe(name, () => {
             test('evaluate', () => {
-                const inputs = data1.flatMap((a) => data2.map((b) => [a, b] as const));
+                let inputs: Type[][] = [[]];
+                for (const types of data) {
+                    inputs = inputs.flatMap((a) => types.map((b) => [...a, b]));
+                }
 
                 const actual = inputs
                     .map((args) => new FunctionCallExpression(name, args))
@@ -210,7 +213,7 @@ describe('Builtin functions', () => {
     testBinary('string::includes', strings);
     testBinary('string::startsWith', strings);
     testBinary('string::endsWith', strings);
-    testBinary2('string::repeat', strings, [
+    testCall('string::repeat', strings, [
         literal(0),
         literal(1),
         literal(2),
@@ -221,6 +224,37 @@ describe('Builtin functions', () => {
         intInterval(0, Infinity),
         intInterval(-1, Infinity),
     ]);
+    testCall(
+        'string::slice',
+        strings,
+        [
+            literal(0),
+            literal(1),
+            literal(2),
+            literal(10),
+            literal(100),
+            literal(-1),
+            literal(-2),
+            literal(-10),
+            literal(-100),
+            intInterval(0, 1),
+            intInterval(2, 6),
+            intInterval(0, Infinity),
+            intInterval(-1, Infinity),
+            intInterval(-1, 1),
+        ],
+        [
+            literal(0),
+            literal(1),
+            literal(2),
+            literal(10),
+            literal(100),
+            literal(Infinity),
+            intInterval(0, 1),
+            intInterval(2, 6),
+            intInterval(0, Infinity),
+        ]
+    );
 
     testBinary('bool::and', bools);
     testBinary('bool::or', bools);
