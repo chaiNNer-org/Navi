@@ -42,17 +42,17 @@ def abs(a: number): number {
 
 /// Returns the nearest whole number of the given number.
 /// The behavior is consistent with JavaScript's `Math.round(a)`.
-intrinsic def round(a: number): number;
+intrinsic def round(a: number): int | nan | inf | -inf;
 /// Returns the nearest whole number that is smaller than or equal to the given number.
 /// The behavior is consistent with JavaScript's `Math.floor(a)`.
-intrinsic def floor(a: number): number;
+intrinsic def floor(a: number): int | nan | inf | -inf;
 /// Returns the nearest whole number that is larger than or equal to the given number.
 /// The behavior is consistent with JavaScript's `Math.floor(a)`.
-intrinsic def ceil(a: number): number;
+intrinsic def ceil(a: number): int | nan | inf | -inf;
 
 intrinsic def number::sin(a: number): number;
 intrinsic def number::cos(a: number): number;
-def number::tan(a: number): number = sin(a) / cos(a);
+def number::tan(a: number): number = number::sin(a) / number::cos(a);
 
 intrinsic def number::exp(a: number): number;
 intrinsic def number::log(a: number): number;
