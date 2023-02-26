@@ -47,7 +47,7 @@ intrinsic def round(a: number): int | nan | inf | -inf;
 /// The behavior is consistent with JavaScript's `Math.floor(a)`.
 intrinsic def floor(a: number): int | nan | inf | -inf;
 /// Returns the nearest whole number that is larger than or equal to the given number.
-/// The behavior is consistent with JavaScript's `Math.floor(a)`.
+/// The behavior is consistent with JavaScript's `Math.ceil(a)`.
 intrinsic def ceil(a: number): int | nan | inf | -inf;
 
 intrinsic def number::sin(a: number): number;
