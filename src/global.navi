@@ -1,0 +1,110 @@
+let int = int(..);
+let uint = int(0..);
+
+/// Returns `-a`.
+intrinsic def number::neg(a: number): number;
+/// Returns the sum of all given values or 0 if no values are given.
+intrinsic def number::add(...values: number): number;
+/// Returns `a - b`.
+intrinsic def number::sub(a: number, b: number): number;
+/// Returns the product of all given values or 1 if no values are given.
+intrinsic def number::mul(...values: number): number;
+/// Returns `a / b`.
+intrinsic def number::div(a: number, b: number): number;
+/// Returns `1 / a`.
+intrinsic def number::rec(a: number): number;
+/// Returns the remainder of `a / b`.
+intrinsic def number::mod(a: number, b: number): number;
+
+/// Returns `a <= b`.
+intrinsic def number::lte(a: number, b: number): bool;
+/// Returns `a < b`.
+intrinsic def number::lt(a: number, b: number): bool;
+/// Returns `a >= b`.
+def number::gte(a: number, b: number): bool = number::lte(b, a);
+/// Returns `a > b`.
+def number::gt(a: number, b: number): bool = number::lt(b, a);
+
+/// Returns the minimum of all given numbers or `inf` if no numbers are given.
+/// If any of the given numbers of `nan`, then `nan` will be returned.
+intrinsic def min(...values: number): number;
+/// Returns the maximum of all given numbers or `-inf` if no numbers are given.
+/// If any of the given numbers of `nan`, then `nan` will be returned.
+intrinsic def max(...values: number): number;
+
+intrinsic def abs(a: number): number;
+/// Returns the nearest whole number of the given number.
+/// The behavior is consistent with JavaScript's `Math.round(a)`.
+intrinsic def round(a: number): number;
+/// Returns the nearest whole number that is smaller than or equal to the given number.
+/// The behavior is consistent with JavaScript's `Math.floor(a)`.
+intrinsic def floor(a: number): number;
+/// Returns the nearest whole number that is larger than or equal to the given number.
+/// The behavior is consistent with JavaScript's `Math.floor(a)`.
+intrinsic def ceil(a: number): number;
+
+intrinsic def number::sin(a: number): number;
+intrinsic def number::cos(a: number): number;
+def number::tan(a: number): number = sin(a) / cos(a);
+
+intrinsic def number::exp(a: number): number;
+intrinsic def number::log(a: number): number;
+intrinsic def number::pow(a: number, b: number): number;
+
+let number::PI = 3.141592653589793;
+let number::E = 2.718281828459045;
+
+/// Converts a number in degrees to radians.
+def number::degToRad(deg: number): number = deg * (number::PI / 180);
+/// Converts a number in radians to degrees.
+def number::radToDeg(rad: number): number = rad / (number::PI * 180);
+
+// string
+
+/// Returns the length of the given string.
+///
+/// Lengths is defined as the number Unicode code points in the given string.
+intrinsic def string::len(s: string): uint;
+/// Concatenates any number of strings. If no strings are given, the empty string is returned.
+intrinsic def string::concat(...values: string): string;
+intrinsic def string::indexOf(s: string, needle: string): nan | uint;
+intrinsic def string::slice(s: string, start: int, length: uint | inf): string;
+/// Repeats the given string `count` times.
+intrinsic def string::repeat(s: string, count: uint): string;
+
+def string::includes(s: string, needle: string): bool = string::indexOf(s, needle) != nan;
+def string::startsWith(s: string, needle: string): bool = string::indexOf(s, needle) == 0;
+def string::endsWith(s: string, needle: string): bool {
+    let l = string::len(needle);
+    string::slice(s, -l, l) == needle
+}
+
+intrinsic def toString(value: string | number): string;
+
+/// invStrSet is an interesting function, because it cannot be an intrinsic function.
+/// For correctness, all intrinsic functions must guarantee the following property:
+///   f(A) ⊆ f(B) if A⊆B
+/// This is necessary for the whole type system to work.
+///
+/// This property is also expected of functions defined in Navi,
+/// but functions that do not follow this property can still be non-problematic in some cases.
+def invStrSet(set: string) {
+    match string { set => never, _ as inv => inv }
+}
+
+// any
+
+/// Returns whether the two given values are equal.
+intrinsic def any::eq(a: any, b: any): bool;
+/// Returns whether the two given values are not equal.
+def any::neq(a: any, b: any): bool = bool::not(any::eq(a, b));
+
+// bool
+
+struct true;
+struct false;
+let bool = true | false;
+
+def bool::not(value: bool): bool = match value { true => false, false => true };
+intrinsic def bool::and(...values: bool): bool;
+intrinsic def bool::or(...values: bool): bool;

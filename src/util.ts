@@ -50,3 +50,8 @@ export const compareNumber = (a: number, b: number): number => {
     if (Number.isNaN(b)) return -1;
     return a - b;
 };
+
+/**
+ * Returns the number of Unicode code points in the given string.
+ */
+export const unicodeLength = (s: string): number => [...s].length;

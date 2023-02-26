@@ -3,8 +3,13 @@ options {
 	language = JavaScript;
 }
 
-definitionDocument: definition* EOF;
+definitionDocument: (definition | declaration)* EOF;
 expressionDocument: definition* expression EOF;
+
+// declarations
+declaration: intrinsicFunctionDeclaration;
+intrinsicFunctionDeclaration:
+	Intrinsic Def name varArgParameters assert? ';';
 
 // definitions
 definition:
@@ -75,7 +80,15 @@ args: (expression (',' expression)* ','?)?;
 fields: '{' (field (',' field)* ','?)? '}';
 field: Identifier assert;
 parameters: '(' (parameter (',' parameter)* ','?)? ')';
+varArgParameters:
+	'(' (
+		(
+			parameter (',' parameter)* (',' varArgParameter)?
+			| varArgParameter
+		) ','?
+	)? ')';
 parameter: Identifier assert;
+varArgParameter: OpSpread Identifier assert;
 assert: ':' expression;
 
 name: Identifier ('::' Identifier)*;
@@ -89,6 +102,10 @@ If: 'if';
 Else: 'else';
 Struct: 'struct';
 Enum: 'enum';
+Intrinsic: 'intrinsic';
+// reserved
+Self: 'self';
+Trait: 'trait';
 
 Discard: '_';
 
@@ -119,6 +136,7 @@ OpGt: '>';
 OpLt: '<';
 OpGte: '>=';
 OpLte: '<=';
+OpSpread: '...';
 
 // skip
 Space: [ \t\r\n]+ -> skip;

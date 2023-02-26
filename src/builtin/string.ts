@@ -1,7 +1,18 @@
-import { BOOL, BOOL_FALSE, BOOL_TRUE, EMPTY_STR } from '../constants';
-import { Int, NumberPrimitive, StringLiteralType, StringPrimitive, StringType } from '../types';
+import { EMPTY_STR, UINT } from '../constants';
+import {
+    Int,
+    IntIntervalType,
+    NumberPrimitive,
+    NumericLiteralType,
+    StringLiteralType,
+    StringPrimitive,
+    StringType,
+} from '../types';
+import { intInterval, literal } from '../types-util';
+import { union } from '../union';
+import { unicodeLength } from '../util';
 import { handleNumberLiterals } from './util';
-import { wrapBinary, wrapReducerVarArgs, wrapUnary } from './wrap';
+import { Arg, wrapBinary, wrapReducerVarArgs, wrapTernary, wrapUnary } from './wrap';
 
 export const toString = wrapUnary<StringPrimitive | NumberPrimitive, StringPrimitive>((a) => {
     if (a.underlying === 'string') return a;
@@ -40,45 +51,160 @@ export const repeat = wrapBinary((text: StringPrimitive, count: Int) => {
     });
 });
 
-export const includes = wrapBinary((text: StringPrimitive, needle: StringPrimitive) => {
-    if (needle.type === 'literal') {
-        if (needle.value === '') {
-            // trivially true
-            return BOOL_TRUE;
-        }
+const hasAllSubStrings = (text: string, set: ReadonlySet<string>): boolean => {
+    if (!set.has('')) {
+        return false;
+    }
 
-        if (text.type === 'literal') {
-            return text.value.includes(needle.value) ? BOOL_TRUE : BOOL_FALSE;
+    const chars = [...text];
+    for (let start = 0; start < chars.length; start++) {
+        for (let end = start + 1; end <= chars.length; end++) {
+            const subString = chars.slice(start, end).join('');
+            if (!set.has(subString)) {
+                return false;
+            }
         }
     }
 
-    return BOOL;
-});
-export const startsWith = wrapBinary((text: StringPrimitive, needle: StringPrimitive) => {
-    if (needle.type === 'literal') {
-        if (needle.value === '') {
-            // trivially true
-            return BOOL_TRUE;
+    return true;
+};
+
+const INDEX_NOT_FOUND = literal(NaN);
+const INDEX_OF_RANGE = union(UINT, INDEX_NOT_FOUND);
+export const indexOf = wrapBinary(
+    (text: StringPrimitive, needle: StringPrimitive): Arg<NumberPrimitive> => {
+        if (needle.type === 'literal' && needle.value === '') {
+            // trivially
+            return literal(0);
         }
 
         if (text.type === 'literal') {
-            return text.value.startsWith(needle.value) ? BOOL_TRUE : BOOL_FALSE;
+            if (needle.type === 'literal') {
+                let index = text.value.indexOf(needle.value);
+                if (index === -1) {
+                    return INDEX_NOT_FOUND;
+                }
+                if (index >= 2) {
+                    // translate UTF-16 index to Unicode index
+                    index = unicodeLength(text.value.slice(0, index));
+                }
+                return literal(index);
+            }
+
+            if (needle.type === 'inverted-set') {
+                // if the needle excludes all possible substrings of
+                if (hasAllSubStrings(text.value, needle.excluded)) {
+                    return INDEX_NOT_FOUND;
+                }
+            }
+
+            const maxIndex = Math.max(0, unicodeLength(text.value) - 1);
+            return union(intInterval(0, maxIndex), INDEX_NOT_FOUND);
         }
+
+        return INDEX_OF_RANGE;
+    }
+);
+export const stringLength = wrapUnary((s: StringPrimitive): Arg<NumberPrimitive> => {
+    if (s.type === 'literal') {
+        return literal(unicodeLength(s.value));
+    }
+    if (s.type === 'inverted-set' && s.excluded.has('')) {
+        return new IntIntervalType(1, Infinity);
+    }
+    return UINT;
+});
+
+const isNum = (type: NumberPrimitive, n: number): type is NumericLiteralType => {
+    return type.type === 'literal' && (Object.is(type.value, n) || type.value === n);
+};
+const collectOffsets = (
+    start: Int,
+    stringLength: number,
+    maxOffsets = 10
+): number[] | undefined => {
+    let min, max;
+    if (start.type === 'literal') {
+        min = start.value;
+        max = start.value;
+    } else {
+        min = start.min;
+        max = start.max;
     }
 
-    return BOOL;
-});
-export const endsWith = wrapBinary((text: StringPrimitive, needle: StringPrimitive) => {
-    if (needle.type === 'literal') {
-        if (needle.value === '') {
-            // trivially true
-            return BOOL_TRUE;
-        }
+    min = Math.max(-stringLength, Math.min(min, stringLength));
+    max = Math.max(-stringLength, Math.min(max, stringLength));
+    max = Math.min(max, min + stringLength);
 
-        if (text.type === 'literal') {
-            return text.value.endsWith(needle.value) ? BOOL_TRUE : BOOL_FALSE;
-        }
+    if (max - min >= maxOffsets) {
+        return undefined;
     }
 
-    return BOOL;
-});
+    const offsets: number[] = [];
+    for (let i = min; i <= max; i++) {
+        offsets.push(i < 0 ? i + stringLength : i);
+    }
+    offsets.sort((a, b) => a - b);
+    return offsets;
+};
+const collectLength = (
+    length: NumberPrimitive,
+    stringLength: number,
+    maxLengths = 10
+): number[] | undefined => {
+    if (length.type === 'literal') {
+        return [Math.min(length.value, stringLength)];
+    }
+    if (length.type !== 'int-interval') {
+        return undefined;
+    }
+
+    const min = Math.min(length.min, stringLength);
+    const max = Math.min(length.max, stringLength);
+
+    if (max - min >= maxLengths) {
+        return undefined;
+    }
+
+    const lengths: number[] = [];
+    for (let i = min; i <= max; i++) {
+        lengths.push(i);
+    }
+    return lengths;
+};
+export const stringSlice = wrapTernary(
+    (s: StringPrimitive, start: Int, length: NumberPrimitive): Arg<StringPrimitive> => {
+        if (isNum(length, 0)) {
+            // no matter what we do, the slice is gonna be the empty string
+            return literal('');
+        }
+        if (isNum(start, 0) && isNum(length, Infinity)) {
+            // we don't change the string at all
+            return s;
+        }
+
+        if (s.type === 'literal') {
+            // start and length are Unicode-based, so we can't use JS string methods
+            const chars = [...s.value];
+
+            const offsets = collectOffsets(start, chars.length);
+            if (!offsets) {
+                return StringType.instance;
+            }
+
+            const substrings = new Set<string>();
+            for (const offset of offsets) {
+                const lengths = collectLength(length, chars.length - offset);
+                if (!lengths) {
+                    return StringType.instance;
+                }
+                for (const l of lengths) {
+                    substrings.add(chars.slice(offset, offset + l).join(''));
+                }
+            }
+
+            return union(...[...substrings].map((s) => new StringLiteralType(s)));
+        }
+        return StringType.instance;
+    }
+);

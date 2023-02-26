@@ -189,22 +189,24 @@ describe('Builtin functions', () => {
     testUnary('floor', numbers);
     testUnary('number::rec', numbers);
 
-    testUnary('degToRad', numbers);
-    testUnary('sin', numbers);
-    testUnary('cos', numbers);
+    testUnary('number::degToRad', numbers);
+    testUnary('number::sin', numbers);
+    testUnary('number::cos', numbers);
 
-    testUnary('exp', numbers);
-    testUnary('log', numbers);
+    testUnary('number::exp', numbers);
+    testUnary('number::log', numbers);
 
     testBinary('min', numbers, { commutative: true, reflexive: true, associative: true });
     testBinary('number::add', numbers, { commutative: true, reflexive: false, associative: false });
     testBinary('number::mul', numbers, { commutative: true, reflexive: false, associative: false });
-    testBinary('mod', numbers);
-    testBinary('pow', numbers);
+    testBinary('number::mod', numbers);
+    testBinary('number::pow', numbers);
     testBinary('number::lt', numbers);
     testBinary('number::lte', numbers);
 
     testUnary('invStrSet', strings);
+    testUnary('string::len', strings);
+    testBinary('string::indexOf', strings);
     testBinary('string::includes', strings);
     testBinary('string::startsWith', strings);
     testBinary('string::endsWith', strings);

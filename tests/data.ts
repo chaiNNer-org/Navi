@@ -95,11 +95,13 @@ export const strings: readonly (StringPrimitive | UnionType<StringPrimitive>)[] 
     new StringLiteralType(''),
     new StringLiteralType('foo'),
     new StringLiteralType('bar'),
+    new StringLiteralType('💩'),
     union(new StringLiteralType('foo'), new StringLiteralType('bar')),
     union(new StringLiteralType('foo'), new StringLiteralType('baz')),
     new InvertedStringSetType(new Set(['foo'])),
     new InvertedStringSetType(new Set(['foo', 'bar'])),
     new InvertedStringSetType(new Set(['bar'])),
+    new InvertedStringSetType(new Set([''])),
 ];
 export const bools: readonly (StructType | UnionType<StructType>)[] = [BOOL_FALSE, BOOL_TRUE, BOOL];
 export const structs: readonly (StructType | UnionType<StructType>)[] = [
