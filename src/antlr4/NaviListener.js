@@ -140,6 +140,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#structExpression.
+	enterStructExpression(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#structExpression.
+	exitStructExpression(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#scopeExpression.
 	enterScopeExpression(ctx) {
 	}

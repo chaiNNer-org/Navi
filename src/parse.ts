@@ -14,10 +14,11 @@ import {
     MatchArm,
     MatchExpression,
     NamedExpression,
-    NamedExpressionField,
     ScopeExpression,
     StructDefinition,
     StructDefinitionField,
+    StructExpression,
+    StructExpressionField,
     UnionExpression,
     VariableDefinition,
 } from './expression';
@@ -310,6 +311,7 @@ class AstConverter {
             | Contexts['MatchExpressionContext']
             | Contexts['IfExpressionContext']
             | Contexts['NamedContext']
+            | Contexts['StructExpressionContext']
             | Contexts['ScopeExpressionContext']
     ): Expression {
         if (
@@ -408,24 +410,26 @@ class AstConverter {
                 getOptional(context, 'functionCall') ??
                 getOptional(context, 'matchExpression') ??
                 getOptional(context, 'ifExpression') ??
-                getOptional(context, 'named');
+                getOptional(context, 'named') ??
+                getOptional(context, 'structExpression');
             if (!rule) throw new ConversionError(context, `No known rule or token`);
             return this.toExpression(rule);
         }
         if (context instanceof NaviParser.NamedContext) {
             const name = this.getName(getRequired(context, 'name'));
-            const fields = getOptional(context, 'fields');
-            if (!fields) {
-                if (name === 'any') return AnyType.instance;
-                if (name === 'never') return NeverType.instance;
-                if (name === 'number') return NumberType.instance;
-                if (name === 'string') return StringType.instance;
-                return new NamedExpression(name);
-            }
-            return new NamedExpression(
+            if (name === 'any') return AnyType.instance;
+            if (name === 'never') return NeverType.instance;
+            if (name === 'number') return NumberType.instance;
+            if (name === 'string') return StringType.instance;
+            return new NamedExpression(name);
+        }
+        if (context instanceof NaviParser.StructExpressionContext) {
+            const name = this.getName(getRequired(context, 'name'));
+            const fields = getRequired(context, 'fields');
+            return new StructExpression(
                 name,
                 this.fieldsToList(fields).map(
-                    ([fieldName, e]) => new NamedExpressionField(fieldName, e)
+                    ([fieldName, e]) => new StructExpressionField(fieldName, e)
                 )
             );
         }

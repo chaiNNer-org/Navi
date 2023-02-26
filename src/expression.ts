@@ -10,6 +10,7 @@ type PureExpression =
     | UnionExpression
     | IntersectionExpression
     | NamedExpression
+    | StructExpression
     | FieldAccessExpression
     | FunctionCallExpression
     | MatchExpression
@@ -68,7 +69,32 @@ export class IntersectionExpression implements ExpressionBase {
     }
 }
 
-export class NamedExpressionField {
+export class NamedExpression implements ExpressionBase {
+    readonly type = 'named';
+
+    readonly underlying = 'expression';
+
+    source: Source | undefined = undefined;
+
+    readonly name: string;
+
+    constructor(name: string) {
+        assertValidStructName(name);
+        this.name = name;
+    }
+
+    toStruct(): StructExpression {
+        const s = new StructExpression(this.name, []);
+        s.source = this.source;
+        return s;
+    }
+
+    toString(): string {
+        return this.name;
+    }
+}
+
+export class StructExpressionField {
     readonly name: string;
 
     readonly type: Expression;
@@ -79,25 +105,25 @@ export class NamedExpressionField {
         this.type = type;
     }
 }
-export class NamedExpression implements ExpressionBase {
-    readonly type = 'named';
+export class StructExpression implements ExpressionBase {
+    readonly type = 'struct';
 
     readonly underlying = 'expression';
 
     source: Source | undefined = undefined;
 
-    readonly fields: readonly NamedExpressionField[];
+    readonly fields: readonly StructExpressionField[];
 
     readonly name: string;
 
-    constructor(name: string, fields: readonly NamedExpressionField[] = []) {
+    constructor(name: string, fields: readonly StructExpressionField[] = []) {
         assertValidStructName(name);
         this.name = name;
         this.fields = fields;
     }
 
     toString(): string {
-        if (this.fields.length === 0) return this.name;
+        if (this.fields.length === 0) return this.name + ' {}';
         return `${this.name} { ${this.fields
             .map((f) => `${f.name}: ${f.type.toString()}`)
             .join(', ')} }`;

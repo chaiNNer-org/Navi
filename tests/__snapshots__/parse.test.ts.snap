@@ -141,7 +141,7 @@ null
 foo
 
 >>> foo {}
-foo
+foo {}
 
 >>> foo { foo: 3 }
 foo { foo: 3 }
@@ -159,7 +159,7 @@ bar { any: any, never: never, number: number, string: string }
 foo::bar::baz
 
 >>> foo::bar::baz {}
-foo::bar::baz
+foo::bar::baz {}
 
 >>> match never {}
 match never {  }
@@ -174,7 +174,7 @@ match a | b {  }
 match a {  }
 
 >>> match a {} {}
-match a {  }
+match a {} {  }
 
 >>> match a { foo: uint } { number => 1 }
 match a { foo: uint } { number => 1 }
