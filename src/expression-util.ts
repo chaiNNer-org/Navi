@@ -22,7 +22,7 @@ export function* getReferences(expression: Expression | Definition): Iterable<st
             case 'field-access':
                 yield* getReferences(expression.of);
                 break;
-            case 'builtin-function':
+            case 'function-call':
                 for (const f of expression.args) {
                     yield* getReferences(f);
                 }

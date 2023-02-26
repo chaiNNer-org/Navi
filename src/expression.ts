@@ -127,7 +127,7 @@ export class FieldAccessExpression implements ExpressionBase {
 }
 
 export class FunctionCallExpression implements ExpressionBase {
-    readonly type = 'builtin-function';
+    readonly type = 'function-call';
 
     readonly underlying = 'expression';
 
@@ -272,7 +272,7 @@ export class StructDefinition implements DefinitionBase {
     }
 }
 
-export class FunctionDefinitionParameter {
+export class FunctionParameter {
     readonly name: string;
 
     readonly type: Expression;
@@ -292,7 +292,7 @@ export class FunctionDefinition implements DefinitionBase {
 
     readonly name: string;
 
-    readonly parameters: readonly FunctionDefinitionParameter[];
+    readonly parameters: readonly FunctionParameter[];
 
     readonly assert: Expression;
 
@@ -300,7 +300,7 @@ export class FunctionDefinition implements DefinitionBase {
 
     constructor(
         name: string,
-        parameters: readonly FunctionDefinitionParameter[],
+        parameters: readonly FunctionParameter[],
         value: Expression,
         assert?: Expression
     ) {

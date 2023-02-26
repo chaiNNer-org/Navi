@@ -2,13 +2,14 @@ import antlr4 from 'antlr4';
 import NaviLexer from './antlr4/NaviLexer';
 import NaviParser from './antlr4/NaviParser';
 import { BOOL_FALSE, BOOL_TRUE } from './constants';
+import { Declaration, IntrinsicFunctionDeclaration } from './declaration';
 import {
     Definition,
     Expression,
     FieldAccessExpression,
     FunctionCallExpression,
     FunctionDefinition,
-    FunctionDefinitionParameter,
+    FunctionParameter,
     IntersectionExpression,
     MatchArm,
     MatchExpression,
@@ -223,13 +224,19 @@ class AstConverter {
     }
 
     private getAssert(
-        context: Contexts['FieldContext'] | Contexts['ParameterContext']
+        context:
+            | Contexts['FieldContext']
+            | Contexts['ParameterContext']
+            | Contexts['VarArgParameterContext']
     ): Expression {
         const assert = getRequired(context, 'assert');
         return this.toExpression(getRequired(assert, 'expression'));
     }
     private getOptionalAssert(
-        context: Contexts['VariableDefinitionContext'] | Contexts['FunctionDefinitionContext']
+        context:
+            | Contexts['VariableDefinitionContext']
+            | Contexts['FunctionDefinitionContext']
+            | Contexts['IntrinsicFunctionDeclarationContext']
     ): Expression | undefined {
         const assert = getOptional(context, 'assert');
         if (assert === undefined) return undefined;
@@ -250,6 +257,22 @@ class AstConverter {
         return getMultiple(args, 'parameter').map((f) => {
             return [getRequiredToken(f, 'Identifier').getText(), this.getAssert(f)] as const;
         });
+    }
+    private varArgsParametersToList(args: Contexts['VarArgParametersContext']): {
+        parameters: (readonly [name: string, expressions: Expression])[];
+        varArgs?: readonly [name: string, expressions: Expression];
+    } {
+        const parameters = getMultiple(args, 'parameter').map((f) => {
+            return [getRequiredToken(f, 'Identifier').getText(), this.getAssert(f)] as const;
+        });
+        const varArgsToken = getOptional(args, 'varArgParameter');
+        const varArgs = varArgsToken
+            ? ([
+                  getRequiredToken(varArgsToken, 'Identifier').getText(),
+                  this.getAssert(varArgsToken),
+              ] as const)
+            : undefined;
+        return { parameters, varArgs };
     }
 
     private getName(name: Contexts['NameContext']): string {
@@ -463,16 +486,12 @@ class AstConverter {
 
     private toDefinitionsWithoutSource(
         context:
-            | Contexts['DefinitionDocumentContext']
             | Contexts['DefinitionContext']
             | Contexts['StructDefinitionContext']
             | Contexts['FunctionDefinitionContext']
             | Contexts['VariableDefinitionContext']
             | Contexts['EnumDefinitionContext']
     ): Definition[] {
-        if (context instanceof NaviParser.DefinitionDocumentContext) {
-            return getMultiple(context, 'definition').flatMap(this.toDefinitions);
-        }
         if (context instanceof NaviParser.DefinitionContext) {
             const rule =
                 getOptional(context, 'structDefinition') ??
@@ -506,8 +525,7 @@ class AstConverter {
                 new FunctionDefinition(
                     name,
                     parameters.map(
-                        ([parameterName, type]) =>
-                            new FunctionDefinitionParameter(parameterName, type)
+                        ([parameterName, type]) => new FunctionParameter(parameterName, type)
                     ),
                     this.toExpression(rule),
                     assert
@@ -550,6 +568,56 @@ class AstConverter {
 
         return assertNever(context);
     }
+
+    toDeclarations = (
+        context: Parameters<AstConverter['toDeclarationsWithoutSource']>[0]
+    ): (Definition | Declaration)[] => {
+        const definitions = this.toDeclarationsWithoutSource(context);
+        const source = this.getSource(context);
+        for (const d of definitions) {
+            d.source ??= source;
+        }
+        return definitions;
+    };
+
+    private toDeclarationsWithoutSource(
+        context:
+            | Parameters<AstConverter['toDefinitionsWithoutSource']>[0]
+            | Contexts['DefinitionDocumentContext']
+            | Contexts['DeclarationContext']
+            | Contexts['IntrinsicFunctionDeclarationContext']
+    ): (Definition | Declaration)[] {
+        if (context instanceof NaviParser.DefinitionDocumentContext) {
+            return [
+                ...getMultiple(context, 'definition').flatMap(this.toDefinitions),
+                ...getMultiple(context, 'declaration').flatMap(this.toDeclarations),
+            ];
+        }
+        if (context instanceof NaviParser.DeclarationContext) {
+            const rule = getOptional(context, 'intrinsicFunctionDeclaration');
+            if (!rule) throw new ConversionError(context, `No known rule or token`);
+            return this.toDeclarations(rule);
+        }
+        if (context instanceof NaviParser.IntrinsicFunctionDeclarationContext) {
+            const name = this.getName(getRequired(context, 'name'));
+            const { parameters, varArgs } = this.varArgsParametersToList(
+                getRequired(context, 'varArgParameters')
+            );
+            const assert = this.getOptionalAssert(context);
+            return [
+                new IntrinsicFunctionDeclaration(
+                    name,
+                    parameters.map(
+                        ([parameterName, type]) => new FunctionParameter(parameterName, type)
+                    ),
+                    varArgs ? new FunctionParameter(...varArgs) : undefined,
+                    assert
+                ),
+            ];
+        }
+
+        return this.toDefinitions(context);
+    }
 }
 
 type ErrorListener = Parameters<antlr4.Recognizer['addErrorListener']>[0];
@@ -578,7 +646,7 @@ export const parseExpression = (document: SourceDocument): Expression => {
     const parser = getParser(document.text);
     return new AstConverter(document).toExpression(parser.expressionDocument());
 };
-export const parseDefinitions = (document: SourceDocument): Definition[] => {
+export const parseDefinitions = (document: SourceDocument): (Definition | Declaration)[] => {
     const parser = getParser(document.text);
-    return new AstConverter(document).toDefinitions(parser.definitionDocument());
+    return new AstConverter(document).toDeclarations(parser.definitionDocument());
 };

@@ -1,7 +1,9 @@
+import { IntrinsicFunctionDeclaration } from './declaration';
 import {
     Definition,
     Expression,
     FunctionDefinition,
+    FunctionParameter,
     StructDefinition,
     VariableDefinition,
 } from './expression';
@@ -10,53 +12,64 @@ import { isSubsetOf } from './relation';
 import { AnyType, NeverType, StructType, Type } from './types';
 import { assertNever } from './util';
 
-export class BuiltinFunctionDefinition {
-    readonly type = 'builtin-function';
+export class IntrinsicFunctionDefinition {
+    readonly type = 'intrinsic-function';
 
     readonly name: string;
 
-    readonly parameters: readonly Expression[];
+    readonly parameters: readonly FunctionParameter[];
 
-    readonly varArgs: Expression | undefined;
+    readonly varArgs: FunctionParameter | undefined;
+
+    readonly assert: Expression;
 
     readonly fn: (...args: Type[]) => Type;
 
     constructor(
         name: string,
         fn: (..._: Type[]) => Type,
-        parameters: readonly Expression[],
-        varArgs?: Expression
+        parameters: readonly FunctionParameter[],
+        varArgs?: FunctionParameter,
+        assert?: Expression
     ) {
         assertValidFunctionName(name);
         this.name = name;
         this.parameters = parameters;
         this.varArgs = varArgs;
+        this.assert = assert ?? AnyType.instance;
         this.fn = fn;
     }
 
     static unary<T extends Type>(
         name: string,
         fn: (a: T) => Type,
-        arg: Expression
-    ): BuiltinFunctionDefinition {
-        return new BuiltinFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg]);
+        arg: FunctionParameter
+    ): IntrinsicFunctionDefinition {
+        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg]);
     }
 
     static binary<T1 extends Type, T2 extends Type>(
         name: string,
         fn: (a: T1, b: T2) => Type,
-        arg0: Expression,
-        arg1: Expression
-    ): BuiltinFunctionDefinition {
-        return new BuiltinFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg0, arg1]);
+        arg0: FunctionParameter,
+        arg1: FunctionParameter
+    ): IntrinsicFunctionDefinition {
+        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg0, arg1]);
     }
 
     static varArgs<T extends Type>(
         name: string,
         fn: (...args: T[]) => Type,
-        arg: Expression
-    ): BuiltinFunctionDefinition {
-        return new BuiltinFunctionDefinition(name, fn as (..._: Type[]) => Type, [], arg);
+        arg: FunctionParameter
+    ): IntrinsicFunctionDefinition {
+        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [], arg);
+    }
+
+    static from(
+        { name, parameters, varArgs, assert }: IntrinsicFunctionDeclaration,
+        fn: (...args: Type[]) => Type
+    ): IntrinsicFunctionDefinition {
+        return new IntrinsicFunctionDefinition(name, fn, parameters, varArgs, assert);
     }
 }
 export class ParameterDefinition {
@@ -73,7 +86,7 @@ export class ParameterDefinition {
     }
 }
 
-export type ScopeBuilderDefinition = Definition | BuiltinFunctionDefinition | ParameterDefinition;
+export type ScopeBuilderDefinition = Definition | IntrinsicFunctionDefinition | ParameterDefinition;
 
 export class ScopeBuilder {
     name: string;
@@ -111,7 +124,7 @@ type ScopeDefinition =
     | ScopeStructDefinition
     | ScopeFunctionDefinition
     | ScopeVariableDefinition
-    | ScopeBuiltinFunctionDefinition
+    | ScopeIntrinsicFunctionDefinition
     | ScopeParameterDefinition;
 
 export interface ScopeStructDefinition {
@@ -137,9 +150,9 @@ export interface ScopeParameterDefinition {
     readonly definition: ParameterDefinition;
     value: Type;
 }
-export interface ScopeBuiltinFunctionDefinition {
-    readonly type: 'builtin-function';
-    readonly definition: BuiltinFunctionDefinition;
+export interface ScopeIntrinsicFunctionDefinition {
+    readonly type: 'intrinsic-function';
+    readonly definition: IntrinsicFunctionDefinition;
     parameters?: readonly Type[];
     varArgs?: Type;
 }
@@ -214,7 +227,7 @@ export class Scope {
     static toScopeDefinition(definition: ScopeBuilderDefinition): ScopeDefinition {
         const { type } = definition;
         switch (type) {
-            case 'builtin-function':
+            case 'intrinsic-function':
                 return { type, definition };
             case 'function':
                 return { type, definition };

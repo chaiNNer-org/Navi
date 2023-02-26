@@ -14,13 +14,13 @@ import {
 import { intersect } from './intersection';
 import { isSubsetOf } from './relation';
 import {
-    BuiltinFunctionDefinition,
+    IntrinsicFunctionDefinition,
     NameResolutionError,
     ResolvedName,
     Scope,
     ScopeBuilder,
-    ScopeBuiltinFunctionDefinition,
     ScopeFunctionDefinition,
+    ScopeIntrinsicFunctionDefinition,
     ScopeParameterDefinition,
     ScopeStructDefinition,
     ScopeVariableDefinition,
@@ -97,13 +97,13 @@ export type ErrorDetails =
     | {
           type: 'Incorrect function argument count';
           expression: FunctionCallExpression;
-          definition: BuiltinFunctionDefinition | FunctionDefinition;
+          definition: IntrinsicFunctionDefinition | FunctionDefinition;
           message: string;
       }
     | {
           type: 'Incompatible argument type';
           expression: FunctionCallExpression;
-          definition: BuiltinFunctionDefinition | FunctionDefinition;
+          definition: IntrinsicFunctionDefinition | FunctionDefinition;
           argument: {
               index: number;
               expression: Type;
@@ -235,7 +235,7 @@ const resolveNamed = (
     }
 
     const { definition, scope } = resolved;
-    if (definition.type === 'function' || definition.type === 'builtin-function') {
+    if (definition.type === 'function' || definition.type === 'intrinsic-function') {
         throw new EvaluationError({
             type: 'Cannot reference function',
             expression,
@@ -338,7 +338,7 @@ const evaluateFieldAccess = (expression: FieldAccessExpression, scope: Scope): T
 const resolveFunction = (
     expression: FunctionCallExpression,
     currentScope: Scope
-): ResolvedName<ScopeFunctionDefinition | ScopeBuiltinFunctionDefinition> => {
+): ResolvedName<ScopeFunctionDefinition | ScopeIntrinsicFunctionDefinition> => {
     let resolved;
     try {
         resolved = currentScope.get(expression.functionName);
@@ -355,7 +355,7 @@ const resolveFunction = (
     }
 
     const { definition, scope } = resolved;
-    if (definition.type === 'function' || definition.type === 'builtin-function') {
+    if (definition.type === 'function' || definition.type === 'intrinsic-function') {
         return { definition, scope };
     }
 
@@ -369,7 +369,7 @@ const evaluateFunctionCall = (expression: FunctionCallExpression, scope: Scope):
     const { definition, scope: definitionScope } = resolveFunction(expression, scope);
 
     // check argument number
-    if (definition.type === 'builtin-function' && definition.definition.varArgs) {
+    if (definition.type === 'intrinsic-function' && definition.definition.varArgs) {
         if (definition.definition.parameters.length > expression.args.length) {
             throw new EvaluationError({
                 type: 'Incorrect function argument count',
@@ -389,22 +389,16 @@ const evaluateFunctionCall = (expression: FunctionCallExpression, scope: Scope):
 
     // evaluate parameter types
     if (!definition.parameters) {
-        if (definition.type === 'builtin-function') {
-            definition.parameters = definition.definition.parameters.map((p) =>
-                evaluate(p, definitionScope)
-            );
-        } else {
-            definition.parameters = definition.definition.parameters.map((p) =>
-                evaluate(p.type, definitionScope)
-            );
-        }
+        definition.parameters = definition.definition.parameters.map((p) =>
+            evaluate(p.type, definitionScope)
+        );
     }
     if (
-        definition.type === 'builtin-function' &&
+        definition.type === 'intrinsic-function' &&
         !definition.varArgs &&
         definition.definition.varArgs
     ) {
-        definition.varArgs = evaluate(definition.definition.varArgs, definitionScope);
+        definition.varArgs = evaluate(definition.definition.varArgs.type, definitionScope);
     }
 
     // evaluate arguments
@@ -528,7 +522,7 @@ export const evaluate = (expression: Expression, scope: Scope): Type => {
             return intersect(...expression.items.map((e) => evaluate(e, scope)));
         case 'field-access':
             return evaluateFieldAccess(expression, scope);
-        case 'builtin-function':
+        case 'function-call':
             return evaluateFunctionCall(expression, scope);
         case 'match':
             return evaluateMatch(expression, scope);
