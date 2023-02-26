@@ -330,74 +330,7 @@ More types are defined by Chainner.
 Built-in functions are functions that takes types are positional arguments and return a type.
 The behave just like user-defined functions, but they are not implemented with Navi but in the host language (in this case TypeScript).
 
-The following built-in functions are supported:
-
--   `number::add(...numbers: number) -> number`
-
-    Takes any number of numbers and returns their sum.
-
--   `number::sub(a: number, b: number) -> number`
-
-    Takes 2 number types and returns the type that represents `a - b`.
-
--   `number::mul(...numbers: number) -> number`
-
-    Takes any number of numbers and returns their product.
-
--   `number::div(a: number, b: number) -> number`
-
-    Takes 2 number types and returns the type that represents `a / b`.
-
--   `number::neg(a: number) -> number`
-
-    Takes a number type and returns the type that represents `-a`.
-
--   `number::gt(a: number, b: number) -> bool` <br>
-    `number::gte(a: number, b: number) -> bool` <br>
-    `number::lt(a: number, b: number) -> bool` <br>
-    `number::lte(a: number, b: number) -> bool`
-
-    Takes 2 numbers and compares them.
-
--   `round(a: number) -> int | nan | inf | -inf` <br>
-    `floor(a: number) -> int | nan | inf | -inf` <br>
-    `ceil(a: number) -> int | nan | inf | -inf`
-
-    Takes a number type and returns the type that represents the nearest whole numbers to the given numbers.
-    The behavior is consistent with JavaScript's `Math.round(a)`, `Math.floor(a)`, and `Math.ceil(a)` respectively.
-
--   `min(...numbers: number) -> number`
-
-    Takes any number of numbers and returns their minimum. The behavior is consistent with JavaScript's `Math.min(a, b)`.
-
--   `max(...numbers: number) -> number`
-
-    Takes any number of numbers and returns their maximum. The behavior is consistent with JavaScript's `Math.max(a, b)`.
-
--   `concat(...segments: string) -> string`
-
-    Takes any number of strings and returns their concatenation.
-
--   `string::repeat(text: string, count: uint) -> string`
-
-    Repeats the given text `count` times.
-
--   `string::include(text: string, needle: string) -> bool` <br>
-    `string::startsWith(text: string, needle: string) -> bool` <br>
-    `string::endsWidth(text: string, needle: string) -> bool`
-
-    These function what their JS equivalents do.
-
--   `bool::and(...values: bool) -> bool` <br>
-    `bool::or(...values: bool) -> bool` <br>
-    `bool::not(value: bool) -> bool`
-
-    These functions implement basic logical operations.
-
--   `any::eq(a: any, b: any) -> bool` <br>
-    `any::neq(a: any, b: any) -> bool`
-
-    Takes 2 values and returns whether the given values are equal.
+For the full list of built-in functions, see [global.navi](src/global.navi).
 
 ### Syntax sugar
 

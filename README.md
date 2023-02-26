@@ -5,3 +5,5 @@
 [![npm](https://img.shields.io/npm/v/@chainner/navi)](https://www.npmjs.com/package/@chainner/navi)
 
 Set-theory based type system used in chaiNNer
+
+Documentation for the Navi language can be found [here](navi.md).
