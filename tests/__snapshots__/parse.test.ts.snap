@@ -180,25 +180,25 @@ match a {} {  }
 match a { foo: uint } { number => 1 }
 
 >>> match a { number => 1, }
-match a { number => 1 }
+match a { number as a => 1 }
 
 >>> match a { number => 1, string => 2, any => 5 }
-match a { number => 1, string => 2, _ => 5 }
+match a { number as a => 1, string as a => 2, _ as a => 5 }
 
 >>> match a { number => 1, string => 2, _ => 5 }
-match a { number => 1, string => 2, _ => 5 }
+match a { number as a => 1, string as a => 2, _ as a => 5 }
 
 >>> match a { _ => 234, number => 1, string => 2, _ => 5 }
-match a { _ => 234, number => 1, string => 2, _ => 5 }
+match a { _ as a => 234, number as a => 1, string as a => 2, _ as a => 5 }
 
 >>> match a {  number as foo => add(foo, 1), _ as foo => foo, }
-match a { number as foo => add(foo, 1), _ as foo => foo }
+match a { number as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, _ as __temp => { let a = __temp; let foo = __temp; foo } }
 
 >>> match a { 1 | 2 as foo => add(foo, 1), "bar" => "baz", _ as foo => foo, }
-match a { 1 | 2 as foo => add(foo, 1), "bar" => "baz", _ as foo => foo }
+match a { 1 | 2 as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, "bar" as a => "baz", _ as __temp => { let a = __temp; let foo = __temp; foo } }
 
 >>> match a { foo::bar => baz, }
-match a { foo::bar => baz }
+match a { foo::bar as a => baz }
 
 >>> if a { 1 } else { 2 }
 match a { true => 1, false => 2 }

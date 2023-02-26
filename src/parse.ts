@@ -22,6 +22,7 @@ import {
     UnionExpression,
     VariableDefinition,
 } from './expression';
+import { isValidIdentifier } from './names';
 import { Source, SourceDocument } from './source';
 import {
     AnyType,
@@ -442,26 +443,52 @@ class AstConverter {
         }
         if (context instanceof NaviParser.MatchExpressionContext) {
             const ofExpression = this.toExpression(getRequired(context, 'expression'));
+            const arms = getMultiple(context, 'matchArm').map((a) => {
+                const binding = getOptionalToken(a, 'Identifier')?.getText();
+                const expressions = getMultiple(a, 'expression');
 
-            return new MatchExpression(
-                ofExpression,
-                getMultiple(context, 'matchArm').map((a) => {
-                    const binding = getOptionalToken(a, 'Identifier')?.getText();
-                    const expressions = getMultiple(a, 'expression');
+                if (getOptionalToken(a, 'Discard')) {
+                    if (expressions.length !== 1)
+                        throw new ConversionError(a, 'Expected a single expression');
+                    const [to] = expressions;
+                    return new MatchArm(AnyType.instance, binding, this.toExpression(to));
+                }
 
-                    if (getOptionalToken(a, 'Discard')) {
-                        if (expressions.length !== 1)
-                            throw new ConversionError(a, 'Expected a single expression');
-                        const [to] = expressions;
-                        return new MatchArm(AnyType.instance, binding, this.toExpression(to));
+                if (expressions.length !== 2)
+                    throw new ConversionError(a, 'Expected 2 expressions');
+                const [pattern, to] = expressions;
+                return new MatchArm(this.toExpression(pattern), binding, this.toExpression(to));
+            });
+
+            if (ofExpression.type === 'named') {
+                const isIdent = isValidIdentifier(ofExpression.name);
+                for (let i = 0; i < arms.length; i++) {
+                    const arm = arms[i];
+                    if (arm.binding && arm.binding === ofExpression.name) {
+                        // we don't need to do anything
+                    } else if (!arm.binding && isIdent) {
+                        arms[i] = new MatchArm(arm.pattern, ofExpression.name, arm.to);
+                    } else {
+                        const temp = `__temp`;
+                        const definitions: Definition[] = [
+                            new VariableDefinition(ofExpression.name, new NamedExpression(temp)),
+                        ];
+                        if (arm.binding) {
+                            definitions.push(
+                                new VariableDefinition(arm.binding, new NamedExpression(temp))
+                            );
+                        }
+
+                        arms[i] = new MatchArm(
+                            arm.pattern,
+                            temp,
+                            new ScopeExpression(definitions, arm.to)
+                        );
                     }
+                }
+            }
 
-                    if (expressions.length !== 2)
-                        throw new ConversionError(a, 'Expected 2 expressions');
-                    const [pattern, to] = expressions;
-                    return new MatchArm(this.toExpression(pattern), binding, this.toExpression(to));
-                })
-            );
+            return new MatchExpression(ofExpression, arms);
         }
         if (context instanceof NaviParser.IfExpressionContext) {
             const condition = this.toExpression(getRequired(context, 'expression'));
