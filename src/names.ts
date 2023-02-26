@@ -1,6 +1,8 @@
 const namePattern = /^[a-zA-Z_]\w*(?:::[a-zA-Z_]\w*)*$/;
 const identifierPattern = /^[a-zA-Z_]\w*$/;
 
+export const isValidIdentifier = (name: string): boolean => identifierPattern.test(name);
+
 export const assertValidStructName = (name: string): void => {
     if (!namePattern.test(name))
         throw new Error(

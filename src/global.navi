@@ -35,8 +35,8 @@ intrinsic def max(...values: number): number;
 /// Returns the absolute value of the given number.
 def abs(a: number): number {
     match a {
-        -inf..0 as a => -a,
-        _ as a => a,
+        -inf..0 => -a,
+        _ => a,
     }
 }
 
