@@ -32,7 +32,14 @@ intrinsic def min(...values: number): number;
 /// If any of the given numbers of `nan`, then `nan` will be returned.
 intrinsic def max(...values: number): number;
 
-intrinsic def abs(a: number): number;
+/// Returns the absolute value of the given number.
+def abs(a: number): number {
+    match a {
+        -inf..0 as a => -a,
+        _ as a => a,
+    }
+}
+
 /// Returns the nearest whole number of the given number.
 /// The behavior is consistent with JavaScript's `Math.round(a)`.
 intrinsic def round(a: number): number;

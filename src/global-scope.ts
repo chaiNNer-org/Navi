@@ -2,7 +2,6 @@ import fs from 'fs';
 import { equal } from './builtin/any';
 import { and, or } from './builtin/bool';
 import {
-    abs,
     add,
     ceil,
     cos,
@@ -54,7 +53,7 @@ const createGlobalScope = (): Scope => {
 
         min: minimum,
         max: maximum,
-        abs: abs,
+
         round: round,
         floor: floor,
         ceil: ceil,
