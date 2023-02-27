@@ -1,6 +1,6 @@
 {
   "name": "@chainner/navi",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A set-theory based type system used in chaiNNer",
   "main": "./dist/main.js",
   "module": "./dist/module.mjs",
