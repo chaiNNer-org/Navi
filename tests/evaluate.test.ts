@@ -255,6 +255,13 @@ describe('Builtin functions', () => {
             intInterval(0, Infinity),
         ]
     );
+    testCall(
+        'string::replace',
+        strings,
+        strings,
+        [literal('x')],
+        [literal(0), literal(1), intInterval(0, 2), literal(Infinity)]
+    );
 
     testBinary('bool::and', bools);
     testBinary('bool::or', bools);

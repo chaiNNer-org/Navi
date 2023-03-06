@@ -78,6 +78,13 @@ intrinsic def string::indexOf(s: string, needle: string): nan | uint;
 intrinsic def string::slice(s: string, start: int, length: uint | inf): string;
 /// Repeats the given string `count` times.
 intrinsic def string::repeat(s: string, count: uint): string;
+/// Replaces `count` many occurrences of `old` in `s` with `new`.
+///
+/// Occurrences of `old` are replaced left to right. If `count` is set to 1, only the first occurrence will be replaced.
+/// If `count` is `inf`, all occurrences will be replaced.
+///
+/// If `count` is 0, or `old` is not included in `s`, `s` will be returned as is.
+intrinsic def string::replace(s: string, old: string, new: string, count: uint | inf): string;
 
 def string::includes(s: string, needle: string): bool = string::indexOf(s, needle) != nan;
 def string::startsWith(s: string, needle: string): bool = string::indexOf(s, needle) == 0;

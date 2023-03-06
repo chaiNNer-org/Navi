@@ -10,9 +10,16 @@ import {
 } from '../types';
 import { intInterval, literal } from '../types-util';
 import { union } from '../union';
-import { unicodeLength } from '../util';
+import { escapeLiteralRegex, unicodeLength } from '../util';
 import { handleNumberLiterals } from './util';
-import { Arg, wrapBinary, wrapReducerVarArgs, wrapTernary, wrapUnary } from './wrap';
+import {
+    Arg,
+    wrapBinary,
+    wrapQuaternary,
+    wrapReducerVarArgs,
+    wrapTernary,
+    wrapUnary,
+} from './wrap';
 
 export const toString = wrapUnary<StringPrimitive | NumberPrimitive, StringPrimitive>((a) => {
     if (a.underlying === 'string') return a;
@@ -208,3 +215,48 @@ export const stringSlice = wrapTernary(
         return StringType.instance;
     }
 );
+
+export const stringReplace = wrapQuaternary(
+    (
+        s: StringPrimitive,
+        oldString: StringPrimitive,
+        newString: StringPrimitive,
+        count: NumberPrimitive
+    ): Arg<StringPrimitive> => {
+        if (isNum(count, 0)) {
+            // no replacements are going to occur
+            return s;
+        }
+        if (
+            oldString.type === 'literal' &&
+            newString.type === 'literal' &&
+            oldString.value === newString.value
+        ) {
+            // the replacement is a noop
+            return s;
+        }
+
+        if (s.type === 'literal' && oldString.type === 'literal' && newString.type === 'literal') {
+            return handleNumberLiterals<StringPrimitive>(count, StringType.instance, (n) => {
+                return literal(stringReplaceImpl(s.value, oldString.value, newString.value, n));
+            });
+        }
+        return StringType.instance;
+    }
+);
+const stringReplaceImpl = (
+    s: string,
+    oldString: string,
+    newString: string,
+    count: number
+): string => {
+    if (count === 0) {
+        return s;
+    }
+
+    const re = new RegExp(escapeLiteralRegex(oldString), 'gu');
+    let i = 0;
+    return s.replace(re, (m) => {
+        return i++ < count ? newString : m;
+    });
+};

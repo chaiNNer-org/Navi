@@ -21,7 +21,15 @@ import {
     subtract,
 } from './builtin/number';
 import { lessThan, lessThanEqual } from './builtin/number-compare';
-import { concat, indexOf, repeat, stringLength, stringSlice, toString } from './builtin/string';
+import {
+    concat,
+    indexOf,
+    repeat,
+    stringLength,
+    stringReplace,
+    stringSlice,
+    toString,
+} from './builtin/string';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { IntrinsicFunctionDefinition, Scope, ScopeBuilder } from './scope';
@@ -72,6 +80,7 @@ const createGlobalScope = (): Scope => {
         'string::indexOf': indexOf,
         'string::slice': stringSlice,
         'string::repeat': repeat,
+        'string::replace': stringReplace,
 
         toString: toString,
 
