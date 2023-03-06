@@ -66,6 +66,11 @@ def number::degToRad(deg: number): number = deg * (number::PI / 180);
 /// Converts a number in radians to degrees.
 def number::radToDeg(rad: number): number = rad / (number::PI * 180);
 
+/// Parses the given string to an integer. If the string is not a valid integer, `nan` will be returned.
+///
+/// This function mimics the behavior of Python's `int(s, base)` for non-zero bases.
+intrinsic def number::parseInt(s: string, base: int(2..36)): int | nan;
+
 // string
 
 /// Returns the length of the given string.

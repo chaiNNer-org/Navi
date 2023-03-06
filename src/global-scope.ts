@@ -14,6 +14,7 @@ import {
     modulo,
     multiply,
     negate,
+    parseInt,
     pow,
     reciprocal,
     round,
@@ -72,6 +73,8 @@ const createGlobalScope = (): Scope => {
         'number::exp': exp,
         'number::log': log,
         'number::pow': pow,
+
+        'number::parseInt': parseInt,
 
         // string
 

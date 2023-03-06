@@ -1,11 +1,13 @@
 import { INF, INT, NAN, NEG_INF, ONE, ZERO } from '../constants';
 import {
+    Int,
     IntIntervalType,
     IntervalType,
     NeverType,
     NumberPrimitive,
     NumberType,
     NumericLiteralType,
+    StringPrimitive,
 } from '../types';
 import { intInterval, interval, literal } from '../types-util';
 import { union } from '../union';
@@ -412,4 +414,38 @@ export const pow = wrapBinary<NumberPrimitive>((a, b) => {
     // via operator overloading. So this will only implement the part that all implementations should agree on and
     // none of the edge cases.
     return handleNumberLiterals(a, NumberType.instance, (i) => powLiteral(i, b));
+});
+
+const PARSE_INT_RANGE = union(INT, NAN);
+const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+/**
+ * This version of parsing strings is intended to model the behavior of Python's `int(s, base)` for non-zero bases.
+ */
+export const parseInt = wrapBinary<StringPrimitive, Int, NumberPrimitive>((s, base) => {
+    if (s.type === 'literal') {
+        const text = s.value.trim();
+
+        return handleNumberLiterals<NumberPrimitive>(base, PARSE_INT_RANGE, (n) => {
+            // pythons algorithm for parsing numbers is stricter than JavaScript's,
+            // so we have to do some additional validation.
+
+            let t = text;
+            const negative = t.startsWith('-');
+            t = t.replace(/^[+-]/, '');
+
+            if (n === 2) t = t.replace(/^0b/i, '');
+            if (n === 8) t = t.replace(/^0o/i, '');
+            if (n === 16) t = t.replace(/^0x/i, '');
+
+            const validRe = new RegExp(String.raw`^[${DIGITS.slice(0, n)}]+$`, 'i');
+            if (!validRe.test(t)) return NAN;
+
+            let parsed = Number.parseInt(t, n);
+            if (negative) parsed = -parsed;
+            return literal(parsed);
+        });
+    }
+
+    return PARSE_INT_RANGE;
 });
