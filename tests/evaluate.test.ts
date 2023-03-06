@@ -207,6 +207,26 @@ describe('Builtin functions', () => {
     testBinary('number::lt', numbers);
     testBinary('number::lte', numbers);
 
+    testCall(
+        'number::parseInt',
+        [
+            ...strings,
+            literal('1'),
+            literal('123'),
+            literal('-123'),
+            literal('+123'),
+            literal('0123'),
+            literal('0xf'),
+            literal('0b1001'),
+            literal('0o777'),
+            literal('0o1'),
+            literal('123.2'),
+            literal('123f'),
+            literal('  3  '),
+        ],
+        [literal(2), literal(4), literal(8), literal(10), literal(16), literal(36)]
+    );
+
     testUnary('invStrSet', strings);
     testUnary('string::len', strings);
     testBinary('string::indexOf', strings);
@@ -254,6 +274,13 @@ describe('Builtin functions', () => {
             intInterval(2, 6),
             intInterval(0, Infinity),
         ]
+    );
+    testCall(
+        'string::replace',
+        strings,
+        strings,
+        [literal('x')],
+        [literal(0), literal(1), intInterval(0, 2), literal(Infinity)]
     );
 
     testBinary('bool::and', bools);

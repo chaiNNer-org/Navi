@@ -34,7 +34,7 @@ export const mapSmallIntInterval = (
 
 export const handleNumberLiterals = <R extends ValueType>(
     value: NumberPrimitive,
-    defaultValue: R,
+    defaultValue: Arg<R>,
     fn: (n: number) => Arg<R>
 ): Arg<R> => {
     if (value.type === 'literal') return fn(value.value);

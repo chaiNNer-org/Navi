@@ -55,3 +55,10 @@ export const compareNumber = (a: number, b: number): number => {
  * Returns the number of Unicode code points in the given string.
  */
 export const unicodeLength = (s: string): number => [...s].length;
+
+/**
+ * Given some string, this function will return the regex pattern that matches exactly the given string.
+ */
+export const escapeLiteralRegex = (s: string): string => {
+    return s.replace(/[()[\]{}\\.+*?^$|]/g, (m) => '\\' + m);
+};
