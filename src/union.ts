@@ -1,6 +1,7 @@
 import { canonicalize } from './canonical';
 import {
     AnyType,
+    ArrayType,
     CanonicalTypes,
     IntIntervalType,
     IntervalType,
@@ -21,7 +22,7 @@ import {
     ValueType,
 } from './types';
 import { isSameStructType } from './types-util';
-import { assertNever, sameNumber } from './util';
+import { EMPTY_ARRAY, assertNever, sameNumber, swapRemove } from './util';
 
 type NonEmptyArray<T> = [T, ...T[]];
 
@@ -177,6 +178,17 @@ const unionStruct = (a: StructType, b: StructType): StructType | undefined => {
     }
     return new StructType(a.name, fields);
 };
+const unionArray = (a: ArrayType, b: ArrayType): ArrayType | undefined => {
+    if (a.fixed.length === b.fixed.length) {
+        const fixed =
+            a.fixed.length === 0 ? EMPTY_ARRAY : a.fixed.map((x, i) => union(x, b.fixed[i]));
+        const repeated = union(a.repeated, b.repeated);
+        return new ArrayType(fixed, repeated);
+    }
+
+    // TODO: handle the case where one array is a prefix of the other
+    assertNever(a);
+};
 
 const unionIntoSet = <T>(
     set: T[],
@@ -191,7 +203,7 @@ const unionIntoSet = <T>(
             const u = union(setItem, item);
             if (u === undefined) continue;
 
-            set.splice(i, 1);
+            swapRemove(set, i);
             didChange = true;
 
             if (Array.isArray(u)) {
@@ -211,10 +223,9 @@ const unionIntoSet = <T>(
 
 class Union {
     private readonly number: NumberPrimitive[] = [];
-
     private readonly string: StringPrimitive[] = [];
-
     private readonly struct: StructType[] = [];
+    private readonly array: ArrayType[] = [];
 
     constructor(items?: CanonicalTypes<ValueType>) {
         if (items) {
@@ -229,8 +240,11 @@ class Union {
                     case 'struct':
                         this.struct.push(t);
                         break;
-                    default:
+                    case 'array':
+                        this.array.push(t);
                         break;
+                    default:
+                        assertNever(t);
                 }
             }
         }
@@ -247,6 +261,9 @@ class Union {
             case 'struct':
                 unionIntoSet(this.struct, item, unionStruct);
                 break;
+            case 'array':
+                unionIntoSet(this.array, item, unionArray);
+                break;
             case 'union':
                 for (const t of item.items) {
                     this.union(t);
@@ -258,7 +275,12 @@ class Union {
     }
 
     getResult(): ValueType | NeverType | UnionType {
-        const items = canonicalize<ValueType>([...this.number, ...this.string, ...this.struct]);
+        const items = canonicalize<ValueType>([
+            ...this.number,
+            ...this.string,
+            ...this.struct,
+            ...this.array,
+        ]);
 
         if (items.length === 0) return NeverType.instance;
         if (items.length === 1) return items[0];

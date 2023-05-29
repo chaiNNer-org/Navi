@@ -18,6 +18,7 @@ const underlyingOrder: readonly Type['underlying'][] = [
     'number',
     'string',
     'struct',
+    'array',
     'union',
 ];
 
@@ -67,8 +68,21 @@ const comparators: {
         return compareSequences(
             a.fields.map((f) => f.type),
             b.fields.map((f) => f.type),
-
             compareTypes
+        );
+    },
+    array: (a, b) => {
+        const repeatedDiff =
+            Number(a.repeated.type === 'never') - Number(b.repeated.type === 'never');
+        if (repeatedDiff !== 0) return repeatedDiff;
+        // a and b are either both repeated or both fixed
+
+        const lengthDiff = a.fixed.length - b.fixed.length;
+        if (lengthDiff !== 0) return lengthDiff;
+        // the fixed part of a and b have the same length
+
+        return (
+            compareSequences(a.fixed, b.fixed, compareTypes) || compareTypes(a.repeated, b.repeated)
         );
     },
     union: (a, b) => {

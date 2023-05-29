@@ -18,6 +18,7 @@ export const groupByUnderlying = <T extends Type>(types: readonly T[]): Underlyi
         number: [],
         string: [],
         struct: [],
+        array: [],
         union: [],
     };
     for (const t of types) {
