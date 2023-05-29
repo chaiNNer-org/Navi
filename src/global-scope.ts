@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { equal } from './builtin/any';
+import { arrayLength } from './builtin/array';
 import { and, or } from './builtin/bool';
 import {
     add,
@@ -86,6 +87,10 @@ const createGlobalScope = (): Scope => {
         'string::replace': stringReplace,
 
         toString: toString,
+
+        // array
+
+        'array::len': arrayLength,
 
         // any
 

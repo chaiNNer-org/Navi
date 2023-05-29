@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 import { assertValidStructFieldName, assertValidStructName } from './names';
-import { binaryCompare } from './util';
+import { EMPTY_ARRAY, binaryCompare } from './util';
 
-export type Type = PrimitiveType | NeverType | AnyType | UnionType | StructType;
-export type ValueType = PrimitiveType | StructType;
+export type Type = PrimitiveType | NeverType | AnyType | UnionType | StructType | ArrayType;
+export type ValueType = PrimitiveType | StructType | ArrayType;
 export type PrimitiveType = NumberPrimitive | StringPrimitive;
 export type NumberPrimitive = NumberType | NumericLiteralType | IntervalType | IntIntervalType;
 export type StringPrimitive = StringType | StringLiteralType | InvertedStringSetType;
@@ -339,5 +339,56 @@ export class StructType implements TypeBase {
 
     toString(): string {
         return this.getTypeId();
+    }
+}
+
+/**
+ * Arrays are represented as the concatenation of a fixed tuple and a repeated type. If the repeated type is never,
+ * then the array is of fixed length.
+ */
+export class ArrayType implements TypeBase {
+    readonly type = 'array';
+
+    readonly underlying = 'array';
+
+    readonly fixed: readonly NonNeverType[];
+
+    readonly repeated: Type;
+
+    private cachedTypeId: string | undefined;
+
+    constructor(fixed: readonly NonNeverType[], repeated: Type) {
+        this.fixed = fixed;
+        this.repeated = repeated;
+    }
+
+    getTypeId(): string {
+        if (this.cachedTypeId === undefined) {
+            if (this.repeated.type === 'never') {
+                this.cachedTypeId = `[${this.fixed.map((t) => t.getTypeId()).join(', ')}]`;
+            } else {
+                const repeated = `(${this.repeated.getTypeId()})[]`;
+                if (this.fixed.length === 0) {
+                    this.cachedTypeId = repeated;
+                } else {
+                    const fixed = this.fixed.map((t) => t.getTypeId()).join(', ');
+                    this.cachedTypeId = `[${fixed}, ..${repeated}]`;
+                }
+            }
+        }
+        return this.cachedTypeId;
+    }
+
+    toString(): string {
+        return this.getTypeId();
+    }
+
+    static readonly EMPTY = new ArrayType(EMPTY_ARRAY, NeverType.instance);
+    static newFixed(fixed: readonly NonNeverType[]): ArrayType {
+        if (fixed.length === 0) return ArrayType.EMPTY;
+        return new ArrayType(fixed, NeverType.instance);
+    }
+    static newRepeated(repeated: Type): ArrayType {
+        return new ArrayType(EMPTY_ARRAY, repeated);
     }
 }

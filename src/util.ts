@@ -62,3 +62,37 @@ export const unicodeLength = (s: string): number => [...s].length;
 export const escapeLiteralRegex = (s: string): string => {
     return s.replace(/[()[\]{}\\.+*?^$|]/g, (m) => '\\' + m);
 };
+
+export const fillArray = <T>(array: readonly T[], value: T, length: number): readonly T[] => {
+    if (array.length >= length) return array;
+
+    const result = [...array];
+    while (result.length < length) {
+        result.push(value);
+    }
+    return result;
+};
+
+/**
+ * Removes the element at the given index from the array and returns it.
+ *
+ * This is done by swapping the element at the given index with the last element in the array,
+ * and then popping the last element.
+ */
+export const swapRemove = <T>(array: T[], index: number): T => {
+    const length = array.length;
+    if (index < 0 || index >= length) {
+        throw new Error(`Index out of bounds. index = ${index}, length = ${length}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const last = array.pop()!;
+
+    if (index === length - 1) {
+        return last;
+    }
+
+    const value = array[index];
+    array[index] = last;
+    return value;
+};

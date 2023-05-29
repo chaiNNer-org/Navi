@@ -50,6 +50,16 @@ const valueCount = (t: Type): number => {
             }
             return total;
         }
+        case 'array': {
+            if (t.repeated.type !== 'never') return Infinity;
+
+            let total = 1;
+            for (const f of t.fixed) {
+                total *= valueCount(f);
+                if (total === Infinity) break;
+            }
+            return total;
+        }
         case 'union': {
             let total = 0;
             for (const item of t.items) {

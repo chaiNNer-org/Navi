@@ -39,6 +39,7 @@ primaryExpression:
 	| functionCall
 	| named
 	| structExpression
+	| arrayNExpression
 	| scopeExpression
 	| '(' expression ')';
 
@@ -51,6 +52,8 @@ structExpression: name fields;
 scopeExpression: '{' definition* expression '}';
 ifExpression:
 	If expression scopeExpression Else scopeExpression;
+arrayExpression: '[' expression ';' Number ']';
+arrayNExpression: '[' expression ';' Number ']';
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 

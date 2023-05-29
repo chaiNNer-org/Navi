@@ -1,9 +1,11 @@
 import {
     AnyType,
+    ArrayType,
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
     NeverType,
+    NonNeverType,
     NumberPrimitive,
     NumericLiteralType,
     StringLiteralType,
@@ -16,7 +18,7 @@ import {
 } from './types';
 import { groupByUnderlying, isSameStructType } from './types-util';
 import { unionValueTypes } from './union';
-import { assertNever, sameNumber } from './util';
+import { assertNever, fillArray, sameNumber } from './util';
 
 const intersectInterval = (
     a: IntervalType | IntIntervalType,
@@ -111,6 +113,58 @@ const intersectStruct = (a: StructType, b: StructType): StructType | NeverType =
     return new StructType(a.name, items);
 };
 
+const intersectFixed = (
+    a: readonly NonNeverType[],
+    b: readonly NonNeverType[]
+): ArrayType | NeverType => {
+    if (a.length !== b.length) return NeverType.instance;
+
+    const intersection: NonNeverType[] = [];
+    for (let i = 0; i < a.length; i += 1) {
+        const t = intersect(a[i], b[i]);
+        if (t.type === 'never') return NeverType.instance;
+        intersection.push(t);
+    }
+    return ArrayType.newFixed(intersection);
+};
+const intersectArrayFixed = (
+    fixed: readonly NonNeverType[],
+    other: ArrayType
+): ArrayType | NeverType => {
+    if (other.repeated.type === 'never') {
+        // both are fixed
+        return intersectFixed(fixed, other.fixed);
+    }
+
+    if (other.fixed.length > fixed.length) {
+        // other is always longer than fixed
+        return NeverType.instance;
+    } else {
+        const otherFilled = fillArray(other.fixed, other.repeated, fixed.length);
+        return intersectFixed(fixed, otherFilled);
+    }
+};
+const intersectArray = (a: ArrayType, b: ArrayType): ArrayType | NeverType => {
+    if (a.repeated.type === 'never') {
+        return intersectArrayFixed(a.fixed, b);
+    } else if (b.repeated.type === 'never') {
+        return intersectArrayFixed(b.fixed, a);
+    }
+
+    const repeated = intersect(a.repeated, b.repeated);
+
+    if (a.fixed.length === 0 && b.fixed.length === 0) {
+        return ArrayType.newRepeated(repeated);
+    }
+
+    const aFilled = fillArray(a.fixed, a.repeated, b.fixed.length);
+    const bFilled = fillArray(b.fixed, b.repeated, a.fixed.length);
+    const fixed = intersectFixed(aFilled, bFilled);
+    if (fixed.type === 'never') return NeverType.instance;
+
+    return new ArrayType(fixed.fixed, repeated);
+};
+
 const reduceValues = <T extends Type>(
     primitives: readonly T[],
     reducer: (a: T, b: T) => T | NeverType
@@ -137,6 +191,8 @@ const intersect2ValueTypes = (a: ValueType, b: ValueType): ValueType | NeverType
             return intersectString(a, b as StringPrimitive);
         case 'struct':
             return intersectStruct(a, b as StructType);
+        case 'array':
+            return intersectArray(a, b as ArrayType);
         default:
             return assertNever(a);
     }
