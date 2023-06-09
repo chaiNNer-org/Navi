@@ -21,9 +21,13 @@ intrinsic def number::lte(a: number, b: number): bool;
 /// Returns `a < b`.
 intrinsic def number::lt(a: number, b: number): bool;
 /// Returns `a >= b`.
-def number::gte(a: number, b: number): bool = number::lte(b, a);
+def number::gte(a: number, b: number): bool {
+    number::lte(b, a)
+}
 /// Returns `a > b`.
-def number::gt(a: number, b: number): bool = number::lt(b, a);
+def number::gt(a: number, b: number): bool {
+    number::lt(b, a)
+}
 
 /// Returns the minimum of all given numbers or `inf` if no numbers are given.
 /// If any of the given numbers of `nan`, then `nan` will be returned.
@@ -52,7 +56,9 @@ intrinsic def ceil(a: number): int | nan | inf | -inf;
 
 intrinsic def number::sin(a: number): -1..1 | nan;
 intrinsic def number::cos(a: number): -1..1 | nan;
-def number::tan(a: number): number = number::sin(a) / number::cos(a);
+def number::tan(a: number): number {
+    number::sin(a) / number::cos(a)
+}
 
 intrinsic def number::exp(a: number): 0..inf | nan;
 intrinsic def number::log(a: number): number;
@@ -62,9 +68,13 @@ let number::PI = 3.141592653589793;
 let number::E = 2.718281828459045;
 
 /// Converts a number in degrees to radians.
-def number::degToRad(deg: number): number = deg * (number::PI / 180);
+def number::degToRad(deg: number): number {
+    deg * (number::PI / 180)
+}
 /// Converts a number in radians to degrees.
-def number::radToDeg(rad: number): number = rad / (number::PI * 180);
+def number::radToDeg(rad: number): number {
+    rad / (number::PI * 180)
+}
 
 /// Parses the given string to an integer. If the string is not a valid integer, `nan` will be returned.
 ///
@@ -91,8 +101,12 @@ intrinsic def string::repeat(s: string, count: uint): string;
 /// If `count` is 0, or `old` is not included in `s`, `s` will be returned as is.
 intrinsic def string::replace(s: string, old: string, new: string, count: uint | inf): string;
 
-def string::includes(s: string, needle: string): bool = string::indexOf(s, needle) != nan;
-def string::startsWith(s: string, needle: string): bool = string::indexOf(s, needle) == 0;
+def string::includes(s: string, needle: string): bool {
+    string::indexOf(s, needle) != nan
+}
+def string::startsWith(s: string, needle: string): bool {
+    string::indexOf(s, needle) == 0
+}
 def string::endsWith(s: string, needle: string): bool {
     let l = string::len(needle);
     string::slice(s, -l, l) == needle
@@ -108,7 +122,10 @@ intrinsic def toString(value: string | number): string;
 /// This property is also expected of functions defined in Navi,
 /// but functions that do not follow this property can still be non-problematic in some cases.
 def invStrSet(set: string) {
-    match string { set => never, _ as inv => inv }
+    match string {
+        set => never,
+        _ as inv => inv
+    }
 }
 
 // any
@@ -116,7 +133,9 @@ def invStrSet(set: string) {
 /// Returns whether the two given values are equal.
 intrinsic def any::eq(a: any, b: any): bool;
 /// Returns whether the two given values are not equal.
-def any::neq(a: any, b: any): bool = bool::not(any::eq(a, b));
+def any::neq(a: any, b: any): bool {
+    bool::not(any::eq(a, b))
+}
 
 // bool
 
@@ -124,6 +143,11 @@ struct true;
 struct false;
 let bool = true | false;
 
-def bool::not(value: bool): bool = match value { true => false, false => true };
+def bool::not(value: bool): bool {
+    match value {
+        true => false,
+        false => true
+    }
+}
 intrinsic def bool::and(...values: bool): bool;
 intrinsic def bool::or(...values: bool): bool;
