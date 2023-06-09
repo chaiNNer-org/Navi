@@ -8,7 +8,7 @@ import {
     InvertedStringSetType,
     NeverType,
     NonIntIntervalType,
-    NonNeverType,
+    NonNever,
     NonTrivialType,
     NumberPrimitive,
     NumberType,
@@ -516,8 +516,8 @@ type Closed<T extends Type> =
     | T;
 
 type Union2<A extends Type, B extends Type> =
-    | Closed<NonNeverType<A>>
-    | Closed<NonNeverType<B>>
+    | Closed<NonNever<A>>
+    | Closed<NonNever<B>>
     | (A extends NeverType ? (B extends NeverType ? NeverType : never) : never);
 type Union3<A extends Type, B extends Type, C extends Type> = Union2<A, Union2<B, C>>;
 type Union4<A extends Type, B extends Type, C extends Type, D extends Type> = Union2<
