@@ -34,7 +34,8 @@ export type WithType<U extends Type['type'], T extends Type = Type> = T extends 
     : never;
 
 export type NonTrivialType = ValueType | UnionType;
-export type NonNeverType<T extends Type = Type> = Exclude<T, NeverType>;
+export type NonNeverType = Exclude<Type, NeverType>;
+export type NonNever<T extends Type> = Exclude<T, NeverType>;
 
 export enum Bounds {
     Inclusive = 0,
