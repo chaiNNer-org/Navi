@@ -1,5 +1,6 @@
 import { INF, INT, NAN, NEG_INF, ONE, REAL, ZERO } from '../constants';
 import { intersect } from '../intersection';
+import { Range } from '../range';
 import {
     Bounds,
     Int,
@@ -266,14 +267,9 @@ const reciprocalPositiveInterval = (
 ) => {
     return interval(1 / max, 1 / (min || 0), newBounds(maxExclusive, minExclusive));
 };
-const reciprocalInterval = (
-    min: number,
-    max: number,
-    minExclusive: boolean,
-    maxExclusive: boolean
-): Arg<NumberPrimitive> => {
-    if (min === -Infinity && max === Infinity) {
-        if (minExclusive && maxExclusive) {
+const reciprocalInterval = (n: Range): Arg<NumberPrimitive> => {
+    if (n.min === -Infinity && n.max === Infinity) {
+        if (n.minExclusive && n.maxExclusive) {
             // Only 1/inf and 1/-inf are 0 (or -0).
             // Since this interval includes neither, the result will not include 0.
             return union(
@@ -285,29 +281,28 @@ const reciprocalInterval = (
     }
 
     const items: Arg<NumberPrimitive>[] = [];
-    if ((min < 0 && 0 < max) || (min === 0 && !minExclusive) || (max === 0 && !maxExclusive)) {
-        // has 0
+    if (n.has(0)) {
         items.push(NEG_INF, INF);
     }
 
-    if (max > 0) {
+    if (n.max > 0) {
         items.push(
             reciprocalPositiveInterval(
-                min < 0 ? 0 : min,
-                max,
-                min < 0 ? false : minExclusive,
-                maxExclusive
+                n.min < 0 ? 0 : n.min,
+                n.max,
+                n.min < 0 ? false : n.minExclusive,
+                n.maxExclusive
             )
         );
     }
-    if (min < 0) {
+    if (n.min < 0) {
         items.push(
             negate(
                 reciprocalPositiveInterval(
-                    max > 0 ? 0 : -max,
-                    -min,
-                    max > 0 ? false : maxExclusive,
-                    minExclusive
+                    n.max > 0 ? 0 : -n.max,
+                    -n.min,
+                    n.max > 0 ? false : n.maxExclusive,
+                    n.minExclusive
                 )
             )
         );
@@ -320,8 +315,8 @@ export const reciprocal = wrapUnary((n: NumberPrimitive) => {
     if (n.type === 'literal') return reciprocalLiteral(n.value);
     if (n.type === 'int-interval') return reciprocalIntInterval(n);
     // approximate non-int-intervals as intervals
-    if (n.type === 'non-int-interval') return reciprocalInterval(n.min, n.max, true, true);
-    return reciprocalInterval(n.min, n.max, n.minExclusive, n.maxExclusive);
+    if (n.type === 'non-int-interval') return reciprocalInterval(Range.from(n));
+    return reciprocalInterval(Range.from(n));
 });
 export const divide: BinaryFn<NumberPrimitive> = (a, b) => multiply(a, reciprocal(b));
 
@@ -329,16 +324,11 @@ const endsWithPoint5 = (n: number): boolean => {
     if (!Number.isFinite(n) || Number.isInteger(n)) return false;
     return Math.abs(n - Math.round(n)) === 0.5;
 };
-const roundInterval = (
-    nMin: number,
-    nMax: number,
-    minExclusive: boolean,
-    maxExclusive: boolean
-): Arg<NumberPrimitive> => {
-    const min = Math.round(nMin);
-    let max = Math.round(nMax);
+const roundInterval = (n: Range): Arg<NumberPrimitive> => {
+    const min = Math.round(n.min);
+    let max = Math.round(n.max);
 
-    if (maxExclusive && endsWithPoint5(nMax)) {
+    if (n.maxExclusive && endsWithPoint5(n.max)) {
         // round down x.5 if the max end is exclusive
         max--;
     }
@@ -347,40 +337,33 @@ const roundInterval = (
     if (Number.isFinite(min) && Number.isFinite(max)) return new IntIntervalType(min, max);
 
     const items: NumberPrimitive[] = [new IntIntervalType(min, max)];
-    if (min === -Infinity && !minExclusive) items.push(NEG_INF);
-    if (max === Infinity && !maxExclusive) items.push(INF);
+    if (min === -Infinity && !n.minExclusive) items.push(NEG_INF);
+    if (max === Infinity && !n.maxExclusive) items.push(INF);
     return union(...items);
 };
 export const round = wrapUnary((n: NumberPrimitive) => {
     if (n.type === 'literal') return literal(Math.round(n.value));
     if (n.type === 'int-interval') return n;
     if (n.type === 'number') return union(NAN, NEG_INF, INF, INT);
-    if (n.type === 'non-int-interval') return roundInterval(n.min, n.max, true, true);
-    return roundInterval(n.min, n.max, n.minExclusive, n.maxExclusive);
+    return roundInterval(Range.from(n));
 });
-const floorInterval = (
-    nMin: number,
-    nMax: number,
-    minExclusive: boolean,
-    maxExclusive: boolean
-): Arg<NumberPrimitive> => {
-    const min = Math.floor(nMin);
-    let max = Math.floor(nMax);
-    if (maxExclusive && Number.isInteger(nMax)) max -= 1;
+const floorInterval = (n: Range): Arg<NumberPrimitive> => {
+    const min = Math.floor(n.min);
+    let max = Math.floor(n.max);
+    if (n.maxExclusive && Number.isInteger(n.max)) max -= 1;
     if (min === max) return literal(min);
     if (Number.isFinite(min) && Number.isFinite(max)) return new IntIntervalType(min, max);
 
     const items: NumberPrimitive[] = [new IntIntervalType(min, max)];
-    if (min === -Infinity && !minExclusive) items.push(NEG_INF);
-    if (max === Infinity && !maxExclusive) items.push(INF);
+    if (min === -Infinity && !n.minExclusive) items.push(NEG_INF);
+    if (max === Infinity && !n.maxExclusive) items.push(INF);
     return union(...items);
 };
 export const floor = wrapUnary((n: NumberPrimitive) => {
     if (n.type === 'literal') return literal(Math.floor(n.value));
     if (n.type === 'int-interval') return n;
     if (n.type === 'number') return union(NAN, NEG_INF, INF, INT);
-    if (n.type === 'non-int-interval') return floorInterval(n.min, n.max, true, true);
-    return floorInterval(n.min, n.max, n.minExclusive, n.maxExclusive);
+    return floorInterval(Range.from(n));
 });
 export const ceil: UnaryFn<NumberPrimitive> = (a) => negate(floor(negate(a)));
 
