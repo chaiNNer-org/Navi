@@ -1,4 +1,5 @@
 import { INF, INT, NAN, NEG_INF, ONE, REAL, ZERO } from '../constants';
+import { intersect } from '../intersection';
 import {
     Bounds,
     Int,
@@ -415,7 +416,7 @@ export const modulo: BinaryFn<NumberPrimitive> = (a, b) => {
 
     if (a.type === 'never' || b.type === 'never') return NeverType.instance;
 
-    const trivial: NumberPrimitive[] = [];
+    const trivial: Arg<NumberPrimitive>[] = [];
     if (
         hasLiteral(a, NaN) ||
         hasLiteral(a, Infinity) ||
@@ -423,10 +424,41 @@ export const modulo: BinaryFn<NumberPrimitive> = (a, b) => {
         hasLiteral(b, NaN)
     ) {
         trivial.push(NAN);
+
+        a = without(a, NON_FINITE) as Arg<NumberPrimitive>;
+        b = without(b, NAN) as Arg<NumberPrimitive>;
+        if (a.type === 'never' || b.type === 'never') {
+            return union(...trivial);
+        }
     }
 
-    a = without(a, NON_FINITE) as Arg<NumberPrimitive>;
-    b = without(b, NAN) as Arg<NumberPrimitive>;
+    // Python % is weird for n % +-inf:
+    if (hasLiteral(b, Infinity)) {
+        // n = 0..!inf and n % inf -> n
+        // n = -inf!..!0 and n % inf -> inf
+        const pos = intersect(a, new IntervalType(0, Infinity, Bounds.MaxExclusive));
+        const neg = intersect(a, new IntervalType(-Infinity, 0, Bounds.Exclusive));
+        if (pos.type !== 'never') trivial.push(pos);
+        if (neg.type !== 'never') trivial.push(INF);
+
+        b = without(b, INF) as Arg<NumberPrimitive>;
+        if (b.type === 'never') {
+            return union(...trivial);
+        }
+    }
+    if (hasLiteral(b, -Infinity)) {
+        // n = !0..!inf and n % -inf -> -inf
+        // n = -inf!..0 and n % -inf -> n
+        const pos = intersect(a, new IntervalType(0, Infinity, Bounds.Exclusive));
+        const neg = intersect(a, new IntervalType(-Infinity, 0, Bounds.MinExclusive));
+        if (pos.type !== 'never') trivial.push(NEG_INF);
+        if (neg.type !== 'never') trivial.push(neg);
+
+        b = without(b, NEG_INF) as Arg<NumberPrimitive>;
+        if (b.type === 'never') {
+            return union(...trivial);
+        }
+    }
 
     return union(moduloNonZero(a, b), ...trivial);
 };
