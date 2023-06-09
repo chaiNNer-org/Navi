@@ -171,6 +171,8 @@ const getComplexity = (n: Arg<NumberPrimitive>): number => {
             return 10;
         case 'int-interval':
             return 20;
+        case 'non-int-interval':
+            return 21;
         case 'interval':
             return 30;
         case 'number':

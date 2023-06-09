@@ -1,3 +1,4 @@
+import { INT } from '../src/constants';
 import { evaluate } from '../src/evaluate';
 import {
     Expression,
@@ -7,6 +8,7 @@ import {
     NamedExpression,
     UnionExpression,
 } from '../src/expression';
+import { intersect } from '../src/intersection';
 import { parseExpression } from '../src/parse';
 import { SourceDocument } from '../src/source';
 import { AnyType, NeverType, NumberType, StringLiteralType, StringType, Type } from '../src/types';
@@ -73,38 +75,15 @@ describe('without', () => {
 });
 
 describe('Builtin functions', () => {
-    const testUnary = (name: string, data: readonly Type[]) => {
-        test(name, () => {
-            const actual = [...data, ...sets]
-                .map((e) => new FunctionCallExpression(name, [e]))
-                .map((e) => {
-                    let result;
-                    try {
-                        result = evaluate(e, scope).toString();
-                    } catch (error) {
-                        result = String(error);
-                    }
-                    return `${e.toString()} => ${result}`;
-                })
-                .join('\n');
-            expect(actual).toMatchSnapshot();
-        });
-    };
-    const testBinary = (
+    const testUnary = (
         name: string,
         data: readonly Type[],
-        {
-            commutative = false,
-            reflexive = false,
-            associative = false,
-        }: { commutative?: boolean; reflexive?: boolean; associative?: boolean } = {}
+        { inverter = false, oneAndDone = false }: { inverter?: boolean; oneAndDone?: boolean } = {}
     ) => {
         describe(name, () => {
             test('evaluate', () => {
-                const inputs = commutative ? unorderedPairs(data) : orderedPairs(data);
-
-                const actual = inputs
-                    .map((args) => new FunctionCallExpression(name, args))
+                const actual = [...data, ...sets]
+                    .map((e) => new FunctionCallExpression(name, [e]))
                     .map((e) => {
                         let result;
                         try {
@@ -117,6 +96,70 @@ describe('Builtin functions', () => {
                     .join('\n');
                 expect(actual).toMatchSnapshot();
             });
+
+            if (inverter) {
+                test('inverter', () => {
+                    for (const a of data) {
+                        assertSame(
+                            new FunctionCallExpression(name, [
+                                new FunctionCallExpression(name, [a]),
+                            ]),
+                            a
+                        );
+                    }
+                });
+            }
+            if (oneAndDone) {
+                test('one and done', () => {
+                    for (const a of data) {
+                        assertSame(
+                            new FunctionCallExpression(name, [a]),
+                            new FunctionCallExpression(name, [
+                                new FunctionCallExpression(name, [a]),
+                            ])
+                        );
+                    }
+                });
+            }
+        });
+    };
+    const testBinary = (
+        name: string,
+        data: readonly Type[],
+        {
+            testName = name,
+            evaluate: evaluateTest = true,
+            commutative = false,
+            reflexive = false,
+            associative = false,
+        }: {
+            testName?: string;
+            evaluate?: boolean;
+            commutative?: boolean;
+            reflexive?: boolean;
+            associative?: boolean;
+        } = {}
+    ) => {
+        describe(testName, () => {
+            if (evaluateTest) {
+                test('evaluate', () => {
+                    const inputs = commutative ? unorderedPairs(data) : orderedPairs(data);
+
+                    const actual = inputs
+                        .map((args) => new FunctionCallExpression(name, args))
+                        .map((e) => {
+                            let result;
+                            try {
+                                result = evaluate(e, scope).toString();
+                            } catch (error) {
+                                result = String(error);
+                            }
+                            return `${e.toString()} => ${result}`;
+                        })
+                        .join('\n');
+                    expect(actual).toMatchSnapshot();
+                });
+            }
 
             if (commutative) {
                 test('commutative', () => {
@@ -147,10 +190,10 @@ describe('Builtin functions', () => {
                                 assertSame(
                                     new FunctionCallExpression(name, [
                                         a,
-                                        evaluate(new FunctionCallExpression(name, [b, c]), scope),
+                                        new FunctionCallExpression(name, [b, c]),
                                     ]),
                                     new FunctionCallExpression(name, [
-                                        evaluate(new FunctionCallExpression(name, [a, b]), scope),
+                                        new FunctionCallExpression(name, [a, b]),
                                         c,
                                     ])
                                 );
@@ -186,10 +229,10 @@ describe('Builtin functions', () => {
         });
     };
 
-    testUnary('abs', numbers);
-    testUnary('number::neg', numbers);
-    testUnary('round', numbers);
-    testUnary('floor', numbers);
+    testUnary('abs', numbers, { oneAndDone: true });
+    testUnary('number::neg', numbers, { inverter: true });
+    testUnary('round', numbers, { oneAndDone: true });
+    testUnary('floor', numbers, { oneAndDone: true });
     testUnary('number::rec', numbers);
 
     testUnary('number::degToRad', numbers);
@@ -199,9 +242,17 @@ describe('Builtin functions', () => {
     testUnary('number::exp', numbers);
     testUnary('number::log', numbers);
 
+    const ints = numbers.map((n) => intersect(n, INT)).filter((n) => n.type !== 'never');
+
     testBinary('min', numbers, { commutative: true, reflexive: true, associative: true });
-    testBinary('number::add', numbers, { commutative: true, reflexive: false, associative: false });
-    testBinary('number::mul', numbers, { commutative: true, reflexive: false, associative: false });
+    testBinary('number::add', numbers, { commutative: true, associative: false });
+    testBinary('number::add', ints, {
+        testName: 'number::add with ints',
+        evaluate: false,
+        commutative: true,
+        associative: true,
+    });
+    testBinary('number::mul', numbers, { commutative: true, associative: false });
     testBinary('number::mod', numbers);
     testBinary('number::pow', numbers);
     testBinary('number::lt', numbers);
@@ -283,11 +334,11 @@ describe('Builtin functions', () => {
         [literal(0), literal(1), intInterval(0, 2), literal(Infinity)]
     );
 
-    testBinary('bool::and', bools);
-    testBinary('bool::or', bools);
-    testUnary('bool::not', bools);
+    testBinary('bool::and', bools, { commutative: true, reflexive: true, associative: true });
+    testBinary('bool::or', bools, { commutative: true, reflexive: true, associative: true });
+    testUnary('bool::not', bools, { inverter: true });
 
-    testBinary('any::eq', [...bools, NeverType.instance, AnyType.instance]);
+    testBinary('any::eq', [...bools, NeverType.instance, AnyType.instance], { commutative: true });
 });
 
 describe('Match', () => {

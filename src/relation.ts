@@ -1,68 +1,74 @@
-import { Type, ValueType } from './types';
+import { NumberPrimitive, StringPrimitive, StructType, Type, ValueType } from './types';
 import { isSameStructType } from './types-util';
-import { assertType, sameNumber } from './util';
+import { assertNever, assertType, sameNumber } from './util';
+
+const numberIsSubsetOf = (left: NumberPrimitive, right: NumberPrimitive): boolean => {
+    if (right.type === 'number') return true;
+    if (left.type === 'number') return false;
+
+    // literals
+    if (left.type === 'literal') {
+        if (right.type === 'literal') return sameNumber(left.value, right.value);
+        return right.has(left.value);
+    }
+    if (right.type === 'literal') return false;
+
+    if (left.type === 'int-interval') return right.hasIntInterval(left);
+    if (left.type === 'non-int-interval') return right.hasNonIntInterval(left);
+    return right.hasInterval(left);
+};
+
+const stringIsSubsetOf = (left: StringPrimitive, right: StringPrimitive): boolean => {
+    if (right.type === 'string') return true;
+    if (left.type === 'string') return false;
+
+    if (left.type === 'literal') {
+        if (right.type === 'literal') {
+            return left.value === right.value;
+        }
+        return right.has(left.value);
+    }
+
+    if (right.type === 'literal') return false;
+
+    // Both left and right are inverted string set:
+    //   L ⊆ R
+    // = comp(L.excluded) ⊆ comp(R.excluded)
+    // = L.excluded ⊇ R.excluded
+
+    // I wanted to write `right.excluded.every(v => left.excluded.has(v))`,
+    // but set methods suck
+    for (const rValue of right.excluded) {
+        if (!left.excluded.has(rValue)) return false;
+    }
+    return true;
+};
+
+const structIsSubsetOf = (left: StructType, right: StructType): boolean => {
+    if (!isSameStructType(left, right)) return false;
+
+    for (let i = 0; i < left.fields.length; i += 1) {
+        const l = left.fields[i].type;
+        const r = right.fields[i].type;
+
+        if (!isSubsetOf(l, r)) return false;
+    }
+    return true;
+};
 
 const valueIsSubsetOf = (left: ValueType, right: ValueType): boolean => {
-    if (left.underlying === 'number' && right.underlying === 'number') {
-        if (right.type === 'number') return true;
-        if (left.type === 'number') return false;
+    if (left.underlying !== right.underlying) return false;
 
-        // literals
-        if (left.type === 'literal') {
-            if (right.type === 'literal') return sameNumber(left.value, right.value);
-            return right.has(left.value);
-        }
-        if (right.type === 'literal') return false;
-
-        // int intervals
-        if (left.type === 'int-interval') {
-            return right.min <= left.min && left.max <= right.max;
-        }
-        if (right.type === 'int-interval') return false;
-
-        // intervals
-        return right.min <= left.min && left.max <= right.max;
+    switch (left.underlying) {
+        case 'number':
+            return numberIsSubsetOf(left, right as NumberPrimitive);
+        case 'string':
+            return stringIsSubsetOf(left, right as StringPrimitive);
+        case 'struct':
+            return structIsSubsetOf(left, right as StructType);
+        default:
+            return assertNever(left);
     }
-
-    if (left.underlying === 'string' && right.underlying === 'string') {
-        if (right.type === 'string') return true;
-        if (left.type === 'string') return false;
-
-        if (left.type === 'literal') {
-            if (right.type === 'literal') {
-                return left.value === right.value;
-            }
-            return right.has(left.value);
-        }
-
-        if (right.type === 'literal') return false;
-
-        // Both left and right are inverted string set:
-        //   L ⊆ R
-        // = comp(L.excluded) ⊆ comp(R.excluded)
-        // = L.excluded ⊇ R.excluded
-
-        // I wanted to write `right.excluded.every(v => left.excluded.has(v))`,
-        // but set methods suck
-        for (const rValue of right.excluded) {
-            if (!left.excluded.has(rValue)) return false;
-        }
-        return true;
-    }
-
-    if (left.underlying === 'struct' && right.underlying === 'struct') {
-        if (!isSameStructType(left, right)) return false;
-
-        for (let i = 0; i < left.fields.length; i += 1) {
-            const l = left.fields[i].type;
-            const r = right.fields[i].type;
-
-            if (!isSubsetOf(l, r)) return false;
-        }
-        return true;
-    }
-
-    return false;
 };
 
 export const isSubsetOf = (left: Type, right: Type): boolean => {

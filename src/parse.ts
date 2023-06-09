@@ -26,6 +26,7 @@ import { isValidIdentifier } from './names';
 import { Source, SourceDocument } from './source';
 import {
     AnyType,
+    Bounds,
     IntIntervalType,
     IntervalType,
     NeverType,
@@ -200,7 +201,8 @@ const parseInterval = (text: string): [min: number, max: number] => {
     const [min, max] = text.split('..');
     return [parseNumber(min || '-inf'), parseNumber(max || 'inf')];
 };
-const parseIntervalType = (text: string) => new IntervalType(...parseInterval(text));
+const parseIntervalType = (text: string) =>
+    new IntervalType(...parseInterval(text), Bounds.Inclusive);
 const parseIntIntervalType = (text: string) => {
     const inner = text.slice(3).trim().slice(1, -1).trim();
     return new IntIntervalType(...parseInterval(inner));
