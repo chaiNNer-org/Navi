@@ -30,11 +30,13 @@ import {
     IntIntervalType,
     IntervalType,
     NeverType,
+    NonIntIntervalType,
     NumberType,
     NumericLiteralType,
     StringLiteralType,
     StringType,
 } from './types';
+import { newBounds } from './types-util';
 import { assertNever, noop } from './util';
 
 type FilterContextName<T extends string> = T extends `${string}Context` ? T : never;
@@ -196,16 +198,45 @@ const parseNumber = (text: string): number => {
     return JSON.parse(text) as number;
 };
 const parseNumberType = (text: string) => new NumericLiteralType(parseNumber(text));
-const parseInterval = (text: string): [min: number, max: number] => {
-    // e.g. "123.4..4.567e+2"
-    const [min, max] = text.split('..');
-    return [parseNumber(min || '-inf'), parseNumber(max || 'inf')];
+const parseInterval = (
+    text: string
+): { min: number; max: number; minExclusive: boolean; maxExclusive: boolean } => {
+    // e.g. "123.4..4.567e+2" "!..5", "1..!3"
+    let [min, max] = text.split('..');
+    let minExclusive = false;
+    let maxExclusive = false;
+    if (min.endsWith('!')) {
+        min = min.slice(0, -1);
+        minExclusive = true;
+    }
+    if (max.startsWith('!')) {
+        max = max.slice(1);
+        maxExclusive = true;
+    }
+    return {
+        min: parseNumber(min || '-inf'),
+        max: parseNumber(max || 'inf'),
+        minExclusive,
+        maxExclusive,
+    };
 };
-const parseIntervalType = (text: string) =>
-    new IntervalType(...parseInterval(text), Bounds.Inclusive);
+const parseIntervalType = (text: string) => {
+    const { min, max, minExclusive, maxExclusive } = parseInterval(text);
+    const bounds = newBounds(minExclusive, maxExclusive);
+    if (bounds === Bounds.Exclusive && min + 1 === max && Number.isInteger(min)) {
+        return new NonIntIntervalType(min, max);
+    }
+    return new IntervalType(min, max, bounds);
+};
 const parseIntIntervalType = (text: string) => {
-    const inner = text.slice(3).trim().slice(1, -1).trim();
-    return new IntIntervalType(...parseInterval(inner));
+    const inner = text.slice('int'.length).trim().slice(1, -1).trim();
+    const { min, max } = parseInterval(inner);
+    return new IntIntervalType(min, max);
+};
+const parseNonIntIntervalType = (text: string) => {
+    const inner = text.slice('nonInt'.length).trim().slice(1, -1).trim();
+    const { min, max } = parseInterval(inner);
+    return new NonIntIntervalType(min, max);
 };
 
 class AstConverter {
@@ -402,10 +433,16 @@ class AstConverter {
             if (text !== undefined) return parseStringType(text);
             text = getOptionalToken(context, 'Number')?.getText();
             if (text !== undefined) return parseNumberType(text);
-            text = getOptionalToken(context, 'Interval')?.getText();
+            text =
+                getOptionalToken(context, 'IntervalInclusive')?.getText() ??
+                getOptionalToken(context, 'IntervalMinExclusive')?.getText() ??
+                getOptionalToken(context, 'IntervalMaxExclusive')?.getText() ??
+                getOptionalToken(context, 'IntervalExclusive')?.getText();
             if (text !== undefined) return parseIntervalType(text);
             text = getOptionalToken(context, 'IntInterval')?.getText();
             if (text !== undefined) return parseIntIntervalType(text);
+            text = getOptionalToken(context, 'NonIntInterval')?.getText();
+            if (text !== undefined) return parseNonIntIntervalType(text);
 
             const rule =
                 getOptional(context, 'expression') ??
