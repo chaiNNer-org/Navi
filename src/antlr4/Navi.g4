@@ -31,7 +31,11 @@ enumVariant: Identifier fields?;
 // expression
 primaryExpression:
 	IntInterval
-	| Interval
+	| NonIntInterval
+	| IntervalInclusive
+	| IntervalMinExclusive
+	| IntervalMaxExclusive
+	| IntervalExclusive
 	| Number
 	| String
 	| matchExpression
@@ -112,8 +116,16 @@ Trait: 'trait';
 Discard: '_';
 
 // literals
-IntInterval: 'int' Space? '(' Space? Interval Space? ')';
-Interval: Number? '..' Number?;
+IntInterval:
+	'int' Space? '(' Space? IntervalInclusive Space? ')';
+NonIntInterval:
+	'nonInt' Space? '(' Space? IntervalInclusive Space? ')';
+
+IntervalInclusive: Number? '..' Number?;
+IntervalMinExclusive: Number? '!..' Number?;
+IntervalMaxExclusive: Number? '..!' Number?;
+IntervalExclusive: Number? '!..!' Number?;
+
 Number:
 	'-'? DIGITS ('.' [0-9]+)? ([eE] [+\-]? DIGITS)?
 	| 'inf'

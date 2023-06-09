@@ -4,6 +4,7 @@ import { Comparator, binaryCompare, compareNumber, compareSequences } from './ut
 const numberOrder: readonly WithUnderlying<'number'>['type'][] = [
     'literal',
     'int-interval',
+    'non-int-interval',
     'interval',
     'number',
 ];
@@ -27,7 +28,11 @@ const numberComparators: {
     number: () => 0,
     literal: (a, b) => compareNumber(a.value, b.value),
     'int-interval': (a, b) => compareNumber(a.min, b.min) || compareNumber(a.max, b.max),
-    interval: (a, b) => compareNumber(a.min, b.min) || compareNumber(a.max, b.max),
+    'non-int-interval': (a, b) => compareNumber(a.min, b.min) || compareNumber(a.max, b.max),
+    interval: (a, b) =>
+        compareNumber(a.min, b.min) ||
+        compareNumber(a.max, b.max) ||
+        compareNumber(a.bounds, b.bounds),
 };
 const stringComparators: {
     [key in WithUnderlying<'string'>['type']]: Comparator<WithType<key, WithUnderlying<'string'>>>;

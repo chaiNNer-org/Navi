@@ -12,6 +12,8 @@ const valueCountNumber = (t: NumberPrimitive): number => {
             return Infinity;
         case 'int-interval':
             return t.max - t.min + 1;
+        case 'non-int-interval':
+            return Infinity;
         default:
             return assertNever(t);
     }

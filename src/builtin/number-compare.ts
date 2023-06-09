@@ -2,6 +2,7 @@ import { BOOL, BOOL_FALSE, BOOL_TRUE, REAL } from '../constants';
 import {
     IntIntervalType,
     IntervalType,
+    NonIntIntervalType,
     NumberPrimitive,
     NumericLiteralType,
     StructType,
@@ -9,11 +10,11 @@ import {
 import { union } from '../union';
 import { Arg, wrapBinary } from './wrap';
 
-type NonNan = NumericLiteralType | IntervalType | IntIntervalType;
+type NonNan = NumericLiteralType | IntervalType | IntIntervalType | NonIntIntervalType;
 const handleNan = (
     n: NumberPrimitive
 ): { has: false; without: NonNan } | { has: true; without: NonNan | undefined } => {
-    if (n.type === 'int-interval' || n.type === 'interval') {
+    if (n.type === 'int-interval' || n.type === 'non-int-interval' || n.type === 'interval') {
         return { has: false, without: n };
     }
     if (n.type === 'number') {
@@ -46,13 +47,7 @@ class CompareInterval {
         if (n.type === 'literal') {
             return new CompareInterval(n.value, n.value, false, false);
         }
-        if (n.type === 'interval') {
-            return new CompareInterval(n.min, n.max, false, false);
-        }
-
-        const minExclusive = !Number.isFinite(n.min);
-        const maxExclusive = !Number.isFinite(n.max);
-        return new CompareInterval(n.min, n.max, minExclusive, maxExclusive);
+        return new CompareInterval(n.min, n.max, !n.has(n.min), !n.has(n.max));
     }
 
     has(n: number): boolean {

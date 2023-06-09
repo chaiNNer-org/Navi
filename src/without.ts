@@ -1,13 +1,15 @@
-import { NAN, REAL } from './constants';
+import { INF, NAN, NEG_INF, REAL } from './constants';
+import { intersect } from './intersection';
 import { isSupersetOf } from './relation';
 import {
     AnyType,
+    Bounds,
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
     NeverType,
+    NonIntIntervalType,
     NumberPrimitive,
-    NumberType,
     NumericLiteralType,
     StringLiteralType,
     StringPrimitive,
@@ -17,7 +19,14 @@ import {
     UnionType,
     ValueType,
 } from './types';
-import { groupByUnderlying, intInterval, interval, isSameStructType } from './types-util';
+import {
+    closedInterval,
+    groupByUnderlying,
+    intInterval,
+    interval,
+    isSameStructType,
+    newBounds,
+} from './types-util';
 import { union } from './union';
 import { assertNever, sameNumber } from './util';
 
@@ -29,6 +38,7 @@ const hasLiteral = (primitive: NumberPrimitive, n: number): boolean => {
         case 'number':
             return true;
         case 'int-interval':
+        case 'non-int-interval':
         case 'interval':
             return primitive.has(n);
         case 'literal':
@@ -38,26 +48,57 @@ const hasLiteral = (primitive: NumberPrimitive, n: number): boolean => {
     }
 };
 
+/**
+ * Returns `number \ n`.
+ */
 const complementNumber = (n: NumberPrimitive): WithoutResult<NumberPrimitive> => {
     switch (n.type) {
-        case 'number':
+        case 'number': {
             return NeverType.instance;
-        case 'int-interval':
-            // `number \ int` is not representable and the closest representable type is `number`
-            return NumberType.instance;
-        case 'literal':
+        }
+        case 'literal': {
             if (Number.isNaN(n.value)) {
                 return REAL;
             }
-            // except for NaN, the result is not representable
-            return NumberType.instance;
-        case 'interval': {
-            // Note: except for `-Infinity..Infinity`, the result is not representable and will be
-            // approximated
+
+            return union(
+                NAN,
+                interval(-Infinity, n.value, Bounds.MaxExclusive),
+                interval(n.value, Infinity, Bounds.MinExclusive)
+            );
+        }
+        case 'int-interval': {
             const items: NumberPrimitive[] = [NAN];
-            if (-Infinity < n.min) items.push(interval(-Infinity, n.min));
-            if (n.max < Infinity) items.push(interval(n.max, Infinity));
+            if (n.min === -Infinity) {
+                items.push(NEG_INF);
+            } else {
+                items.push(new IntervalType(-Infinity, n.min, Bounds.MaxExclusive));
+            }
+            if (n.max === Infinity) {
+                items.push(INF);
+            } else {
+                items.push(new IntervalType(n.max, Infinity, Bounds.MinExclusive));
+            }
+            items.push(new NonIntIntervalType(n.min, n.max));
             return union(...items);
+        }
+        case 'non-int-interval': {
+            const items: NumberPrimitive[] = [
+                NAN,
+                closedInterval(-Infinity, n.min),
+                closedInterval(n.max, Infinity),
+            ];
+            if (n.max - n.min > 1) {
+                items.push(intInterval(n.min + 1, n.max - 1));
+            }
+            return union(...items);
+        }
+        case 'interval': {
+            return union(
+                NAN,
+                interval(-Infinity, n.min, newBounds(false, !n.minExclusive)),
+                interval(n.max, Infinity, newBounds(!n.maxExclusive, false))
+            );
         }
         default:
             return assertNever(n);
@@ -65,8 +106,10 @@ const complementNumber = (n: NumberPrimitive): WithoutResult<NumberPrimitive> =>
 };
 const withoutIntInterval = (
     left: IntIntervalType,
-    right: IntIntervalType | IntervalType | NumericLiteralType
+    right: IntIntervalType | NonIntIntervalType | IntervalType | NumericLiteralType
 ): WithoutResult<NumberPrimitive> => {
+    if (right.type === 'non-int-interval') return left;
+
     // The idea here is to first convert the rhs into what is effectively `int & right`.
     // This means that we only have to implement int-interval without int-interval.
 
@@ -79,6 +122,8 @@ const withoutIntInterval = (
     } else if (right.type === 'interval') {
         rMin = Math.ceil(right.min);
         rMax = Math.floor(right.max);
+        if (rMin === right.min && right.minExclusive) rMin += 1;
+        if (rMax === right.max && right.maxExclusive) rMax -= 1;
         if (rMin > rMax) return left;
     } else {
         rMin = right.min;
@@ -98,38 +143,20 @@ const withoutIntInterval = (
 
     return union(...items);
 };
-const withoutInterval = (
-    left: IntervalType,
-    right: IntIntervalType | IntervalType | NumericLiteralType
-): WithoutResult<NumberPrimitive> => {
-    if (right.type === 'literal' || right.type === 'int-interval') {
-        // The nearest representable type for `left \ right` will always be `left`.
-        return left;
-    }
-
-    const items: NumberPrimitive[] = [];
-
-    const a = Math.max(left.min, right.max);
-    if (a < left.max) items.push(interval(a, left.max));
-    const b = Math.min(left.max, right.min);
-    if (left.min < b) items.push(interval(left.min, b));
-
-    return union(...items);
-};
 const withoutNumberPrimitive = (
     left: NumberPrimitive,
     right: NumberPrimitive
 ): WithoutResult<NumberPrimitive> => {
     if (right.type === 'number') return NeverType.instance;
+    if (left.type === 'number') return complementNumber(right);
 
     if (left.type === 'literal') {
         return hasLiteral(right, left.value) ? NeverType.instance : left;
     }
     if (left.type === 'int-interval') return withoutIntInterval(left, right);
 
-    // the following are only approximate
-    if (left.type === 'number') return complementNumber(right);
-    return withoutInterval(left, right);
+    // As we know: A \ B = A & ~B
+    return intersect(left, complementNumber(right));
 };
 
 const withoutStringPrimitive = (

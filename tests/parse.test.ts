@@ -29,6 +29,33 @@ const expressionSnippets: string[] = [
     String.raw`..0`,
     String.raw`1..`,
 
+    String.raw`1!..2`,
+    String.raw`1!..2.5`,
+    String.raw`1e2!..2.5e4`,
+    String.raw`-inf!..inf`,
+    String.raw`-inf!..0`,
+    String.raw`!..`,
+    String.raw`!..0`,
+    String.raw`1!..`,
+
+    String.raw`1..!2`,
+    String.raw`1..!2.5`,
+    String.raw`1e2..!2.5e4`,
+    String.raw`-inf..!inf`,
+    String.raw`-inf..!0`,
+    String.raw`..!`,
+    String.raw`..!0`,
+    String.raw`1..!`,
+
+    String.raw`1!..!2`,
+    String.raw`1!..!2.5`,
+    String.raw`1e2!..!2.5e4`,
+    String.raw`-inf!..!inf`,
+    String.raw`-inf!..!0`,
+    String.raw`!..!`,
+    String.raw`!..!0`,
+    String.raw`1!..!`,
+
     // int intervals
     String.raw`int(1..2)`,
     String.raw`  int   (   1..2   )  `,
@@ -38,6 +65,16 @@ const expressionSnippets: string[] = [
     String.raw`int(..)`,
     String.raw`int(..0)`,
     String.raw`int(1..)`,
+
+    // non-int intervals
+    String.raw`nonInt(1..2)`,
+    String.raw`  nonInt   (   1..2   )  `,
+    String.raw`nonInt(1e2..2.5e4)`,
+    String.raw`nonInt(-inf..inf)`,
+    String.raw`nonInt(-inf..0)`,
+    String.raw`nonInt(..)`,
+    String.raw`nonInt(..0)`,
+    String.raw`nonInt(1..)`,
 
     // strings
     String.raw`""`,
@@ -174,6 +211,13 @@ const invalidExpressionSnippets: string[] = [
     String.raw`int(2..1)`,
     String.raw`int(-inf..nan)`,
     String.raw`int(nan..nan)`,
+
+    // non-int intervals
+    String.raw`nonInt(1..2.5)`,
+    String.raw`nonInt(1..1)`,
+    String.raw`nonInt(2..1)`,
+    String.raw`nonInt(-inf..nan)`,
+    String.raw`nonInt(nan..nan)`,
 
     // strings
     String.raw`"""`,

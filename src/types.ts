@@ -6,7 +6,12 @@ import { binaryCompare } from './util';
 export type Type = PrimitiveType | NeverType | AnyType | UnionType | StructType;
 export type ValueType = PrimitiveType | StructType;
 export type PrimitiveType = NumberPrimitive | StringPrimitive;
-export type NumberPrimitive = NumberType | NumericLiteralType | IntervalType | IntIntervalType;
+export type NumberPrimitive =
+    | NumberType
+    | NumericLiteralType
+    | IntervalType
+    | IntIntervalType
+    | NonIntIntervalType;
 export type StringPrimitive = StringType | StringLiteralType | InvertedStringSetType;
 
 // Integers are very useful and very common, so they get their own type alias.
@@ -31,14 +36,27 @@ export type WithType<U extends Type['type'], T extends Type = Type> = T extends 
 export type NonTrivialType = ValueType | UnionType;
 export type NonNeverType<T extends Type = Type> = Exclude<T, NeverType>;
 
+export enum Bounds {
+    Inclusive = 0,
+    MinExclusive = 1,
+    MaxExclusive = 2,
+    Exclusive = 3,
+}
+
 const formatNumber = (n: number): string => {
     if (Number.isNaN(n)) return 'nan';
     if (n === Infinity) return 'inf';
     if (n === -Infinity) return '-inf';
     return String(n);
 };
-const formatInterval = (min: number, max: number) => {
-    return `${formatNumber(min)}..${formatNumber(max)}`;
+const INTERVAL_BOUNDS: Record<Bounds, string> = {
+    [Bounds.Inclusive]: '..',
+    [Bounds.MinExclusive]: '!..',
+    [Bounds.MaxExclusive]: '..!',
+    [Bounds.Exclusive]: '!..!',
+};
+const formatInterval = (min: number, max: number, bounds: Bounds) => {
+    return `${formatNumber(min)}${INTERVAL_BOUNDS[bounds]}${formatNumber(max)}`;
 };
 
 interface TypeBase {
@@ -90,7 +108,30 @@ export class NumericLiteralType implements TypeBase {
         return this.getTypeId();
     }
 }
-export class IntervalType implements TypeBase {
+interface Interval {
+    readonly min: number;
+    readonly max: number;
+    /**
+     * Returns `true` if the given number is contained in this interval.
+     */
+    has(n: number): boolean;
+    /**
+     * Returns `true` if the given interval is a subset of this interval.
+     */
+    hasInterval(i: IntervalType): boolean;
+    /**
+     * Returns `true` if the given interval is a subset of this interval.
+     */
+    hasIntInterval(i: IntIntervalType): boolean;
+    /**
+     * Returns `true` if the given interval is a subset of this interval.
+     */
+    hasNonIntInterval(i: NonIntIntervalType): boolean;
+}
+/**
+ * An interval of numbers. The interval may be closed or open on either end.
+ */
+export class IntervalType implements TypeBase, Interval {
     readonly type = 'interval';
 
     readonly underlying = 'number';
@@ -99,7 +140,16 @@ export class IntervalType implements TypeBase {
 
     readonly max: number;
 
-    constructor(min: number, max: number) {
+    readonly bounds: Bounds;
+
+    get minExclusive(): boolean {
+        return (this.bounds & Bounds.MinExclusive) !== 0;
+    }
+    get maxExclusive(): boolean {
+        return (this.bounds & Bounds.MaxExclusive) !== 0;
+    }
+
+    constructor(min: number, max: number, bounds: Bounds) {
         if (Number.isNaN(min) || Number.isNaN(max)) {
             throw new Error(`min=${min} and max=${max} cannot be NaN`);
         }
@@ -107,27 +157,56 @@ export class IntervalType implements TypeBase {
             throw new Error(`min=${min} must be < max=${max}`);
         }
 
+        if (bounds === Bounds.Exclusive && min + 1 === max && Number.isInteger(min)) {
+            throw new Error(
+                `Open interval min=${min} max=${max} must be represented as a NonIntInterval`
+            );
+        }
+
         this.min = min;
         this.max = max;
+        this.bounds = bounds;
     }
 
     has(n: number): boolean {
-        return this.min <= n && n <= this.max;
+        const min = this.minExclusive ? this.min < n : this.min <= n;
+        const max = this.maxExclusive ? n < this.max : n <= this.max;
+        return min && max;
     }
-
-    overlaps(other: IntervalType): boolean {
-        return Math.max(this.min, other.min) <= Math.min(this.max, other.max);
+    hasInterval(i: IntervalType): boolean {
+        return (
+            this.min <= i.min &&
+            i.max <= this.max &&
+            (i.minExclusive || this.has(i.min)) &&
+            (i.maxExclusive || this.has(i.max))
+        );
+    }
+    hasIntInterval(i: IntIntervalType): boolean {
+        const min = i.min === -Infinity ? this.min === -Infinity : this.has(i.min);
+        const max = i.max === Infinity ? this.max === Infinity : this.has(i.max);
+        return min && max;
+    }
+    hasNonIntInterval(i: NonIntIntervalType): boolean {
+        // we don't have to check exclusivity, because the ends of non int intervals are exclusive
+        return this.min <= i.min && i.max <= this.max;
+    }
+    hasAnyInteger(): boolean {
+        const m = Math.floor(this.min);
+        return m === -Infinity || this.has(m) || this.has(m + 1);
     }
 
     getTypeId(): string {
-        return formatInterval(this.min, this.max);
+        return formatInterval(this.min, this.max, this.bounds);
     }
 
     toString(): string {
         return this.getTypeId();
     }
 }
-export class IntIntervalType implements TypeBase {
+/**
+ * An interval of integers. Both ends are inclusive unless they are infinite.
+ */
+export class IntIntervalType implements TypeBase, Interval {
     readonly type = 'int-interval';
 
     readonly underlying = 'number';
@@ -157,9 +236,72 @@ export class IntIntervalType implements TypeBase {
     has(n: number): boolean {
         return Number.isInteger(n) && this.min <= n && n <= this.max;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    hasInterval(_: IntervalType): false {
+        return false;
+    }
+    hasIntInterval(i: IntIntervalType): boolean {
+        return this.min <= i.min && i.max <= this.max;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    hasNonIntInterval(_: NonIntIntervalType): false {
+        return false;
+    }
 
     getTypeId(): string {
-        return `int(${formatInterval(this.min, this.max)})`;
+        return `int(${formatInterval(this.min, this.max, Bounds.Inclusive)})`;
+    }
+
+    toString(): string {
+        return this.getTypeId();
+    }
+}
+/**
+ * An interval of numbers that are not integers. Both ends are integers (or infinite) and exclusive.
+ */
+export class NonIntIntervalType implements TypeBase, Interval {
+    readonly type = 'non-int-interval';
+
+    readonly underlying = 'number';
+
+    readonly min: number;
+
+    readonly max: number;
+
+    constructor(min: number, max: number) {
+        if (Number.isNaN(min) || Number.isNaN(max)) {
+            throw new Error(`min=${min} and max=${max} cannot be NaN`);
+        }
+        if (
+            !(Number.isInteger(min) || min === -Infinity) ||
+            !(Number.isInteger(max) || max === Infinity)
+        ) {
+            throw new Error(`min=${min} and max=${max} must be integers or infinity`);
+        }
+        if (!(min < max)) {
+            throw new Error(`min=${min} must be < max=${max}`);
+        }
+
+        this.min = min;
+        this.max = max;
+    }
+
+    has(n: number): boolean {
+        return !Number.isInteger(n) && this.min < n && n < this.max;
+    }
+    hasInterval(i: IntervalType): boolean {
+        return !i.hasAnyInteger() && this.min <= i.min && i.max <= this.max;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    hasIntInterval(_: IntIntervalType): false {
+        return false;
+    }
+    hasNonIntInterval(i: NonIntIntervalType): boolean {
+        return this.min <= i.min && i.max <= this.max;
+    }
+
+    getTypeId(): string {
+        return `nonInt(${formatInterval(this.min, this.max, Bounds.Inclusive)})`;
     }
 
     toString(): string {

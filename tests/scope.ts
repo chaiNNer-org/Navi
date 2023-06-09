@@ -7,11 +7,17 @@ const scopeBuilder = new ScopeBuilder('test scope', globalScope);
 scopeBuilder.add(new StructDefinition('null'));
 export const scope = scopeBuilder.createScope();
 
-export const assertSame = (a: Expression, b: Expression): void => {
-    const expected = evaluate(a, scope).getTypeId();
-    const actual = evaluate(b, scope).getTypeId();
-    if (expected !== actual) {
-        const prefix = `a = ${a.toString()}\nb = ${b.toString()}\n`;
-        expect(prefix + actual).toBe(prefix + expected);
+export const assertSame = (left: Expression, right: Expression): void => {
+    const l = evaluate(left, scope).getTypeId();
+    const r = evaluate(right, scope).getTypeId();
+    if (l !== r) {
+        const prefix = `l = ${left.toString()}\nr = ${right.toString()}\n`;
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _l = evaluate(left, scope);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _r = evaluate(right, scope);
+
+        expect(prefix + 'l => ' + l).toBe(prefix + 'r => ' + r);
     }
 };

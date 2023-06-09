@@ -1,11 +1,13 @@
 import { canonicalize } from './canonical';
 import {
     AnyType,
+    Bounds,
     CanonicalTypes,
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
     NeverType,
+    NonIntIntervalType,
     NonNeverType,
     NonTrivialType,
     NumberPrimitive,
@@ -20,15 +22,74 @@ import {
     UnionType,
     ValueType,
 } from './types';
-import { isSameStructType } from './types-util';
-import { assertNever, sameNumber } from './util';
+import { intInterval, isSameStructType, newBounds } from './types-util';
+import { NonEmptyArray, assertNever, sameNumber } from './util';
 
-type NonEmptyArray<T> = [T, ...T[]];
+const unionLiteralIntInterval = (n: number, b: IntIntervalType): NumberPrimitive | undefined => {
+    if (Number.isInteger(n)) {
+        // the literal is an integer, so we might be able to add it to the interval
+        if (n === b.min - 1) return new IntIntervalType(n, b.max);
+        if (n === b.max + 1) return new IntIntervalType(b.min, n);
+    }
+    return undefined;
+};
+const unionLiteralNonIntInterval = (
+    n: number,
+    b: NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    if (Number.isInteger(n) && b.min <= n && n <= b.max) {
+        // the literal is an integer and fills as hole
 
+        // middle
+        let middle;
+        if (n === b.min) {
+            middle = new IntervalType(n, n + 1, Bounds.MaxExclusive);
+        } else if (n === b.max) {
+            middle = new IntervalType(n - 1, n, Bounds.MinExclusive);
+        } else {
+            middle = new IntervalType(n - 1, n + 1, Bounds.Exclusive);
+        }
+
+        const items: NonEmptyArray<NumberPrimitive> = [middle];
+
+        // left
+        const leftMax = n - 1;
+        if (b.min < leftMax) {
+            items.push(new NonIntIntervalType(b.min, leftMax));
+        }
+
+        // right
+        const rightMin = n + 1;
+        if (rightMin < b.max) {
+            items.push(new NonIntIntervalType(rightMin, b.max));
+        }
+
+        return items;
+    }
+    return undefined;
+};
+const unionLiteralInterval = (n: number, b: IntervalType): NumberPrimitive | undefined => {
+    if (
+        Number.isNaN(n) &&
+        b.min === -Infinity &&
+        b.max === Infinity &&
+        b.bounds === Bounds.Inclusive
+    ) {
+        return NumberType.instance;
+    }
+    if (b.min === n && b.minExclusive) {
+        return new IntervalType(b.min, b.max, b.bounds & Bounds.MaxExclusive);
+    }
+    if (b.max === n && b.maxExclusive) {
+        return new IntervalType(b.min, b.max, b.bounds & Bounds.MinExclusive);
+    }
+
+    return undefined;
+};
 const unionLiteralNumber = (
     a: NumericLiteralType,
-    b: NumericLiteralType | IntervalType | IntIntervalType
-): NumberPrimitive | undefined => {
+    b: NumericLiteralType | IntervalType | IntIntervalType | NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
     if (b.type === 'literal') {
         if (sameNumber(a.value, b.value)) return a;
 
@@ -42,39 +103,75 @@ const unionLiteralNumber = (
 
     if (b.has(a.value)) return b;
 
-    if (b.type === 'int-interval' && Number.isInteger(a.value)) {
-        if (a.value === b.min - 1) return new IntIntervalType(b.min - 1, b.max);
-        if (a.value === b.max + 1) return new IntIntervalType(b.min, b.max + 1);
-    }
-
-    if (
-        Number.isNaN(a.value) &&
-        b.type === 'interval' &&
-        b.min === -Infinity &&
-        b.max === Infinity
-    ) {
-        return NumberType.instance;
-    }
-
-    return undefined;
+    if (b.type === 'int-interval') return unionLiteralIntInterval(a.value, b);
+    if (b.type === 'non-int-interval') return unionLiteralNonIntInterval(a.value, b);
+    return unionLiteralInterval(a.value, b);
 };
 
-const unionIntInterval = (
+const unionIntIntervalIntInterval = (
     a: IntIntervalType,
-    b: IntervalType | IntIntervalType
-): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
-    if (b.type === 'int-interval') {
-        const minMin = Math.min(a.min, b.min);
-        const maxMin = Math.max(a.min, b.min);
-        const minMax = Math.min(a.max, b.max);
-        const maxMax = Math.max(a.max, b.max);
+    b: IntIntervalType
+): NumberPrimitive | undefined => {
+    const minMin = Math.min(a.min, b.min);
+    const maxMin = Math.max(a.min, b.min);
+    const minMax = Math.min(a.max, b.max);
+    const maxMax = Math.max(a.max, b.max);
 
-        if (maxMin - 1 > minMax) return undefined;
-        return new IntIntervalType(minMin, maxMax);
+    if (maxMin - 1 > minMax) return undefined;
+    return new IntIntervalType(minMin, maxMax);
+};
+const unionIntIntervalNonIntInterval = (
+    a: IntIntervalType,
+    b: NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    // the two intervals are disjoint
+    if (b.max < a.min || a.max < b.min) return undefined;
+
+    // there is *some* overlap
+    let min = Math.max(a.min, b.min);
+    let max = Math.min(a.max, b.max);
+    let minExclusive = min === -Infinity;
+    let maxExclusive = max === Infinity;
+
+    // extend the overlap to include adjacent non-integers
+    if (b.min < min) {
+        min--;
+        minExclusive = true;
+    }
+    if (max < b.max) {
+        max++;
+        maxExclusive = true;
     }
 
-    // the interval completely contains the int interval
-    if (b.min <= a.min && a.max <= b.max) return b;
+    const items: NonEmptyArray<NumberPrimitive> = [
+        min === max
+            ? new NumericLiteralType(min)
+            : new IntervalType(min, max, newBounds(minExclusive, maxExclusive)),
+    ];
+
+    // left of overlap
+    if (a.min < b.min) {
+        items.push(intInterval(a.min, b.min - 1));
+    }
+    if (b.min < min) {
+        items.push(new NonIntIntervalType(b.min, min));
+    }
+
+    // right of overlap
+    if (max < b.max) {
+        items.push(new NonIntIntervalType(max, b.max));
+    }
+    if (b.max < a.max) {
+        items.push(intInterval(b.max + 1, a.max));
+    }
+
+    return items;
+};
+const unionIntIntervalInterval = (
+    a: IntIntervalType,
+    b: IntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    if (b.hasIntInterval(a)) return b;
 
     // the two intervals are disjoint
     if (b.max < a.min || a.max < b.min) return undefined;
@@ -89,15 +186,140 @@ const unionIntInterval = (
     const leftMax = bIntMin - 1;
     const rightMin = bIntMax + 1;
 
-    const result: NonEmptyArray<NumberPrimitive> = [b];
+    const result: NonEmptyArray<NumberPrimitive> = [
+        new IntervalType(
+            b.min,
+            b.max,
+            newBounds(b.minExclusive && !a.has(b.min), b.maxExclusive && !a.has(b.max))
+        ),
+    ];
 
-    if (a.min === leftMax) result.push(new NumericLiteralType(leftMax));
-    else if (a.min < leftMax) result.push(new IntIntervalType(a.min, leftMax));
-
-    if (a.max === rightMin) result.push(new NumericLiteralType(rightMin));
-    else if (rightMin < a.max) result.push(new IntIntervalType(rightMin, a.max));
+    if (a.min <= leftMax && leftMax !== -Infinity) result.push(intInterval(a.min, leftMax));
+    if (rightMin <= a.max && rightMin !== Infinity) result.push(intInterval(rightMin, a.max));
 
     return result;
+};
+const unionIntInterval = (
+    a: IntIntervalType,
+    b: IntervalType | IntIntervalType | NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    if (b.type === 'int-interval') return unionIntIntervalIntInterval(a, b);
+    if (b.type === 'non-int-interval') return unionIntIntervalNonIntInterval(a, b);
+    return unionIntIntervalInterval(a, b);
+};
+
+const unionNonIntIntervalNonIntInterval = (
+    a: NonIntIntervalType,
+    b: NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    let l, r;
+    if (a.min < b.min) {
+        l = a;
+        r = b;
+    } else {
+        l = b;
+        r = a;
+    }
+
+    if (l.max < r.min) return undefined;
+
+    const min = l.min;
+    const max = Math.max(l.max, r.max);
+    return new NonIntIntervalType(min, max);
+};
+const unionNonIntIntervalInterval = (
+    a: NonIntIntervalType,
+    b: IntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    if (b.hasNonIntInterval(a)) return b;
+    if (a.hasInterval(b)) return a;
+
+    // disjoint
+    if (a.max < b.min || b.max < a.min) return undefined;
+    // almost touching, but still disjoint
+    if ((b.max === a.min && b.maxExclusive) || (a.max === b.min && b.minExclusive))
+        return undefined;
+
+    // this union basically just extends the interval and splits the non-int-interval
+    // so we calculate the interval first and see what's left of the non-int-interval
+
+    let { min, max, minExclusive, maxExclusive } = b;
+    if (max === a.min && !maxExclusive) {
+        max++;
+        maxExclusive = true;
+    }
+    if (min === a.max && !minExclusive) {
+        min--;
+        minExclusive = true;
+    }
+    if (a.min < min) {
+        const minInt = Math.floor(min);
+        if (minInt < min) {
+            min = minInt;
+            minExclusive = true;
+        } else if (!minExclusive) {
+            min--;
+            minExclusive = true;
+        }
+    }
+    if (max < a.max) {
+        const maxInt = Math.ceil(max);
+        if (max < maxInt) {
+            max = maxInt;
+            maxExclusive = true;
+        } else if (!maxExclusive) {
+            max++;
+            maxExclusive = true;
+        }
+    }
+
+    const items: NonEmptyArray<NumberPrimitive> = [
+        new IntervalType(min, max, newBounds(minExclusive, maxExclusive)),
+    ];
+
+    if (a.min < min) {
+        items.push(new NonIntIntervalType(a.min, min));
+    }
+    if (max < a.max) {
+        items.push(new NonIntIntervalType(max, a.max));
+    }
+
+    return items;
+};
+const unionNonIntInterval = (
+    a: NonIntIntervalType,
+    b: IntervalType | NonIntIntervalType
+): NumberPrimitive | NonEmptyArray<NumberPrimitive> | undefined => {
+    if (b.type === 'non-int-interval') return unionNonIntIntervalNonIntInterval(a, b);
+    return unionNonIntIntervalInterval(a, b);
+};
+
+const unionInterval = (a: IntervalType, b: IntervalType): NumberPrimitive | undefined => {
+    let l, r;
+    if (a.min < b.min) {
+        l = a;
+        r = b;
+    } else {
+        l = b;
+        r = a;
+    }
+
+    if (l.max < r.min) return undefined;
+    if (l.max === r.min && l.maxExclusive && r.minExclusive) return undefined;
+
+    const min = l.min;
+    const max = Math.max(l.max, r.max);
+
+    const minInclusive = !l.minExclusive || r.has(min);
+    const maxInclusive = l.has(max) || r.has(max);
+
+    const bounds = newBounds(!minInclusive, !maxInclusive);
+
+    if (bounds === Bounds.Exclusive && min + 1 === max && Number.isInteger(min)) {
+        return new NonIntIntervalType(min, max);
+    }
+
+    return new IntervalType(min, max, bounds);
 };
 
 const unionNumber = (
@@ -112,12 +334,10 @@ const unionNumber = (
     if (a.type === 'int-interval') return unionIntInterval(a, b);
     if (b.type === 'int-interval') return unionIntInterval(b, a);
 
-    if (a.overlaps(b)) {
-        const min = Math.min(a.min, b.min);
-        const max = Math.max(a.max, b.max);
-        return new IntervalType(min, max);
-    }
-    return undefined;
+    if (a.type === 'non-int-interval') return unionNonIntInterval(a, b);
+    if (b.type === 'non-int-interval') return unionNonIntInterval(b, a);
+
+    return unionInterval(a, b);
 };
 
 const unionInvertedStringSet = (
@@ -266,7 +486,12 @@ class Union {
     }
 }
 
-export const unionValueTypes = (...types: ValueType[]): ValueType | UnionType | NeverType => {
+export function unionValueTypes(
+    ...types: NumberPrimitive[]
+): NumberPrimitive | UnionType<NumberPrimitive> | NeverType;
+export function unionValueTypes(...types: ValueType[]): ValueType | UnionType | NeverType;
+// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
+export function unionValueTypes(...types: ValueType[]): ValueType | UnionType | NeverType {
     if (types.length === 0) return NeverType.instance;
     if (types.length === 1) return types[0];
 
@@ -277,19 +502,15 @@ export const unionValueTypes = (...types: ValueType[]): ValueType | UnionType | 
     }
 
     return u.getResult();
-};
+}
 
 type ClosedValueType<T extends ValueType> =
-    | (T extends NumericLiteralType ? NumberPrimitive : never)
-    | (T extends IntervalType ? NumberPrimitive : never)
-    | (T extends IntIntervalType ? NumberPrimitive : never)
-    | (T extends StringLiteralType ? StringPrimitive : never)
+    | (T extends NumberPrimitive ? NumberPrimitive : never)
+    | (T extends StringPrimitive ? StringPrimitive : never)
     | T;
 type Closed<T extends Type> =
-    | (T extends NumericLiteralType ? NumberPrimitive | UnionType<NumberPrimitive> : never)
-    | (T extends IntervalType ? NumberPrimitive | UnionType<NumberPrimitive> : never)
-    | (T extends IntIntervalType ? NumberPrimitive | UnionType<NumberPrimitive> : never)
-    | (T extends StringLiteralType ? StringPrimitive | UnionType<StringPrimitive> : never)
+    | (T extends NumberPrimitive ? NumberPrimitive | UnionType<NumberPrimitive> : never)
+    | (T extends StringPrimitive ? StringPrimitive | UnionType<StringPrimitive> : never)
     | (T extends StructType ? StructType | UnionType<StructType> : never)
     | (T extends UnionType<infer U> ? UnionType<ClosedValueType<U>> : never)
     | T;

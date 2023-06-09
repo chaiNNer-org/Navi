@@ -1,4 +1,5 @@
 import { IntIntervalType, NumberPrimitive, ValueType } from '../types';
+import { interval, newBounds } from '../types-util';
 import { union } from '../union';
 import { Arg } from './wrap';
 
@@ -46,4 +47,35 @@ export const handleNumberLiterals = <R extends ValueType>(
         return union(...items) as Arg<R>;
     }
     return defaultValue;
+};
+
+export interface RangePoint {
+    value: number;
+    exclusive: boolean;
+}
+export const combineRangePoints = (points: readonly RangePoint[]) => {
+    // remove invalid points
+    points = points.filter((p) => !Number.isNaN(p.value));
+
+    let min = points[0].value;
+    let max = points[0].value;
+    let minExclusive = points[0].exclusive;
+    let maxExclusive = points[0].exclusive;
+    for (let j = 1; j < points.length; j++) {
+        const p = points[j];
+        if (p.value < min) {
+            min = p.value;
+            minExclusive = p.exclusive;
+        } else if (p.value === min) {
+            minExclusive = minExclusive && p.exclusive;
+        }
+        if (p.value > max) {
+            max = p.value;
+            maxExclusive = p.exclusive;
+        } else if (p.value === max) {
+            maxExclusive = maxExclusive && p.exclusive;
+        }
+    }
+
+    return interval(min, max, newBounds(minExclusive, maxExclusive));
 };

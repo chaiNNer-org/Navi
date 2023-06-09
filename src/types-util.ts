@@ -1,6 +1,9 @@
 import {
+    Bounds,
     IntIntervalType,
     IntervalType,
+    NeverType,
+    NonIntIntervalType,
     NumericLiteralType,
     StringLiteralType,
     StructType,
@@ -57,13 +60,38 @@ export function literal(value: number | string) {
     if (typeof value === 'number') return new NumericLiteralType(value);
     return new StringLiteralType(value);
 }
-export const interval = (min: number, max: number) => {
+export const interval = (min: number, max: number, exclusivity: Bounds) => {
+    if (min === max) {
+        if (exclusivity === Bounds.Inclusive) {
+            return new NumericLiteralType(min);
+        } else {
+            return NeverType.instance;
+        }
+    }
+    if (exclusivity === Bounds.Exclusive && min + 1 === max && Number.isInteger(min)) {
+        return new NonIntIntervalType(min, max);
+    }
+    return new IntervalType(min, max, exclusivity);
+};
+export const closedInterval = (min: number, max: number): NumericLiteralType | IntervalType => {
     if (min === max) return new NumericLiteralType(min);
-    return new IntervalType(min, max);
+    return new IntervalType(min, max, Bounds.Inclusive);
+};
+export const openInterval = (
+    min: number,
+    max: number
+): NeverType | IntervalType | NonIntIntervalType => {
+    if (min === max) return NeverType.instance;
+    if (min + 1 === max && Number.isInteger(min)) return new NonIntIntervalType(min, max);
+    return new IntervalType(min, max, Bounds.Exclusive);
 };
 export const intInterval = (min: number, max: number) => {
-    if (min === max) return new NumericLiteralType(min);
+    if (min === max && Number.isFinite(min)) return new NumericLiteralType(min);
     return new IntIntervalType(min, max);
+};
+export const nonIntInterval = (min: number, max: number) => {
+    if (min === max) return NeverType.instance;
+    return new NonIntIntervalType(min, max);
 };
 
 export const isNumericLiteral = (type: Type): type is NumericLiteralType => {
@@ -71,4 +99,11 @@ export const isNumericLiteral = (type: Type): type is NumericLiteralType => {
 };
 export const isStringLiteral = (type: Type): type is StringLiteralType => {
     return type.type === 'literal' && type.underlying === 'string';
+};
+
+export const newBounds = (minExclusive: boolean, maxExclusive: boolean): Bounds => {
+    let e = Bounds.Inclusive;
+    if (minExclusive) e |= Bounds.MinExclusive;
+    if (maxExclusive) e |= Bounds.MaxExclusive;
+    return e;
 };
