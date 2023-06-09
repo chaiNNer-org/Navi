@@ -626,8 +626,8 @@ export const sin = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
             { value: Math.sin(min), exclusive: !a.has(a.min) },
             { value: Math.sin(max), exclusive: !a.has(a.max) },
         ];
-        // check multiples of pi/2
-        for (let i = -3; i <= 3; i++) {
+        // check all minimas and maximas
+        for (let i = -3; i <= 3; i += 2) {
             const x = (i * Math.PI) / 2;
             if (min < x && x < max) {
                 // round to prevent any rounding errors, we expect either -1, 0 or 1
@@ -663,8 +663,8 @@ export const cos = wrapUnary<NumberPrimitive>((a: NumberPrimitive) => {
             { value: Math.cos(min), exclusive: !a.has(a.min) },
             { value: Math.cos(max), exclusive: !a.has(a.max) },
         ];
-        // check multiples of pi/2
-        for (let i = -3; i <= 3; i++) {
+        // check all minimas and maximas
+        for (let i = -2; i <= 2; i += 2) {
             const x = (i * Math.PI) / 2;
             if (min < x && x < max) {
                 // round to prevent any rounding errors, we expect either -1, 0 or 1
