@@ -264,19 +264,21 @@ type BaseTypes<T extends Type> = T extends ValueType
     : T extends AnyType
     ? AnyType | ValueType
     : never;
-type Foo<T extends ValueType | AnyType> = T extends AnyType
+type Closed<T extends ValueType | AnyType> = T extends AnyType
     ? AnyType
     : T extends ValueType
     ? T | UnionType<T>
     : never;
-
-type Intersection2Impl<A extends Type, B extends Type> = Foo<BaseTypes<A> & BaseTypes<B>>;
-type Intersection2<A extends Type, B extends Type> = NeverType | Intersection2Impl<A, B>;
+type Intersection2<A extends Type, B extends Type> =
+    | NeverType
+    | Closed<BaseTypes<A> & BaseTypes<B>>;
 
 export function intersect(): AnyType;
 export function intersect<A extends Type>(a: A): A;
 export function intersect<A extends Type, B extends Type>(a: A, b: B): Intersection2<A, B>;
-export function intersect<T extends Type>(...types: T[]): AnyType | NeverType | Foo<BaseTypes<T>>;
+export function intersect<T extends Type>(
+    ...types: T[]
+): AnyType | NeverType | Closed<BaseTypes<T>>;
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function intersect(...types: Type[]): Type {
     const items: InternalIntersectionItem[] = [];
