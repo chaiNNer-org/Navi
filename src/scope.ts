@@ -9,7 +9,7 @@ import {
 } from './expression';
 import { assertValidFunctionName, assertValidStructName } from './names';
 import { isSubsetOf } from './relation';
-import { AnyType, NeverType, StructType, Type } from './types';
+import { AnyType, StructDescriptor, Type } from './types';
 import { assertNever } from './util';
 
 export class IntrinsicFunctionDefinition {
@@ -94,6 +94,7 @@ export class ScopeBuilder {
     parent: Scope | undefined;
 
     private readonly definitions = new Map<string, ScopeBuilderDefinition>();
+    private readonly descriptors = new Map<string, StructDescriptor>();
 
     constructor(name: string, parent?: Scope) {
         this.name = name;
@@ -108,15 +109,64 @@ export class ScopeBuilder {
             );
         }
     }
+    private assertCompatibleStructDescriptor(
+        descriptor: StructDescriptor,
+        definition: ScopeBuilderDefinition
+    ): void {
+        if (definition.type !== 'struct') {
+            throw new Error(
+                `The struct descriptor "${definition.name}" is defined ${this.name}, but the definition with the same is not a struct definition, it's a ${definition.type} definition.`
+            );
+        }
+        if (definition.fields.length !== descriptor.fields.length) {
+            throw new Error(
+                `The struct descriptor "${definition.name}" is defined ${this.name}, but the struct definition with the same name has a different number of fields.`
+            );
+        }
+        for (let i = 0; i < definition.fields.length; i++) {
+            const field = definition.fields[i];
+            const fieldDescriptor = descriptor.fields[i];
+            if (field.name !== fieldDescriptor.name) {
+                throw new Error(
+                    `The struct descriptor "${definition.name}" is defined ${this.name}, but the struct definition with the same name has a different field name at index ${i}. The descriptor has "${fieldDescriptor.name}", but the definition has "${field.name}`
+                );
+            }
+        }
+    }
 
     add(definition: ScopeBuilderDefinition): void {
         const { name } = definition;
         this.assertNameAvailable(name);
+
+        const descriptor = this.descriptors.get(name);
+        if (descriptor !== undefined) {
+            this.assertCompatibleStructDescriptor(descriptor, definition);
+        }
+
         this.definitions.set(name, definition);
     }
 
+    addStructDescriptor(descriptor: StructDescriptor): void {
+        const { name } = descriptor;
+
+        const current = this.descriptors.get(name);
+        if (current !== undefined) {
+            if (current === descriptor) {
+                return;
+            }
+            throw new Error(`Incompatible struct descriptors with the name ${name}.`);
+        }
+
+        const definition = this.definitions.get(name);
+        if (definition !== undefined) {
+            this.assertCompatibleStructDescriptor(descriptor, definition);
+        }
+
+        this.descriptors.set(name, descriptor);
+    }
+
     createScope(): Scope {
-        return new Scope(this.name, this.parent, this.definitions.values());
+        return new Scope(this.name, this.parent, this.definitions.values(), this.descriptors);
     }
 }
 
@@ -130,7 +180,7 @@ type ScopeDefinition =
 export interface ScopeStructDefinition {
     readonly type: 'struct';
     readonly definition: StructDefinition;
-    default?: StructType | NeverType;
+    descriptor?: StructDescriptor;
 }
 export interface ScopeFunctionDefinition {
     readonly type: 'function';
@@ -212,19 +262,23 @@ export class Scope {
     constructor(
         name: string,
         parent: Scope | undefined,
-        definitions: Iterable<ScopeBuilderDefinition>
+        definitions: Iterable<ScopeBuilderDefinition>,
+        structDescriptors: ReadonlyMap<string, StructDescriptor>
     ) {
         this.name = name;
         this.parent = parent;
 
         const defs = new Map<string, ScopeDefinition>();
         for (const definition of definitions) {
-            defs.set(definition.name, Scope.toScopeDefinition(definition));
+            defs.set(definition.name, Scope.toScopeDefinition(definition, structDescriptors));
         }
         this.definitions = defs;
     }
 
-    static toScopeDefinition(definition: ScopeBuilderDefinition): ScopeDefinition {
+    private static toScopeDefinition(
+        definition: ScopeBuilderDefinition,
+        structDescriptors: ReadonlyMap<string, StructDescriptor>
+    ): ScopeDefinition {
         const { type } = definition;
         switch (type) {
             case 'intrinsic-function':
@@ -232,7 +286,7 @@ export class Scope {
             case 'function':
                 return { type, definition };
             case 'struct':
-                return { type, definition };
+                return { type, definition, descriptor: structDescriptors.get(definition.name) };
             case 'variable':
                 return { type, definition };
             case 'parameter':

@@ -1,5 +1,5 @@
 import { isDisjointWith } from './intersection';
-import { NumberPrimitive, StringPrimitive, Type } from './types';
+import { NumberPrimitive, StringPrimitive, StructValueType, Type } from './types';
 import { assertNever } from './util';
 
 const valueCountNumber = (t: NumberPrimitive): number => {
@@ -30,6 +30,23 @@ const valueCountString = (t: StringPrimitive): number => {
             return assertNever(t);
     }
 };
+const valueCountStruct = (t: StructValueType): number => {
+    switch (t.type) {
+        case 'instance': {
+            let total = 1;
+            for (const field of t.fields) {
+                total *= valueCount(field);
+                if (total === Infinity) break;
+            }
+            return total;
+        }
+        case 'struct':
+        case 'inverted-set':
+            return Infinity;
+        default:
+            return assertNever(t);
+    }
+};
 
 /**
  * Returns how many values the set represented by the given type contains.
@@ -45,12 +62,7 @@ const valueCount = (t: Type): number => {
         case 'string':
             return valueCountString(t);
         case 'struct': {
-            let total = 1;
-            for (const field of t.fields) {
-                total *= valueCount(field.type);
-                if (total === Infinity) break;
-            }
-            return total;
+            return valueCountStruct(t);
         }
         case 'union': {
             let total = 0;

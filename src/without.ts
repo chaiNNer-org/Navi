@@ -7,26 +7,20 @@ import {
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
+    InvertedStructType,
     NeverType,
     NonIntIntervalType,
     NumberPrimitive,
     NumericLiteralType,
     StringLiteralType,
     StringPrimitive,
-    StructType,
-    StructTypeField,
+    StructInstanceType,
+    StructValueType,
     Type,
     UnionType,
     ValueType,
 } from './types';
-import {
-    closedInterval,
-    groupByUnderlying,
-    intInterval,
-    interval,
-    isSameStructType,
-    newBounds,
-} from './types-util';
+import { closedInterval, groupByUnderlying, intInterval, interval, newBounds } from './types-util';
 import { union } from './union';
 import { assertNever, sameNumber } from './util';
 
@@ -198,8 +192,11 @@ const withoutStringPrimitive = (
     return union(...remaining.map((value) => new StringLiteralType(value)));
 };
 
-const withoutStruct = (left: StructType, right: StructType): StructType | NeverType => {
-    if (isSameStructType(left, right)) {
+const withoutStructInstance = (
+    left: StructInstanceType,
+    right: StructInstanceType
+): StructInstanceType | NeverType => {
+    if (left.descriptor === right.descriptor) {
         if (left.fields.length === 0) {
             // there are no fields, so e.g. `null \ null == never`
             return NeverType.instance;
@@ -207,9 +204,9 @@ const withoutStruct = (left: StructType, right: StructType): StructType | NeverT
         if (left.fields.length === 1) {
             // if there is only field, we only have to find the difference of that field
 
-            const field = without(left.fields[0].type, right.fields[0].type);
+            const field = without(left.fields[0], right.fields[0]);
             if (field.type === 'never') return NeverType.instance;
-            return new StructType(left.name, [new StructTypeField(left.fields[0].name, field)]);
+            return StructInstanceType.fromDescriptorUnchecked(left.descriptor, [field]);
         }
 
         // the condition for multiple fields is as follows:
@@ -223,7 +220,7 @@ const withoutStruct = (left: StructType, right: StructType): StructType | NeverT
         for (let i = 0; i < left.fields.length; i += 1) {
             const leftField = left.fields[i];
             const rightField = right.fields[i];
-            if (!isSupersetOf(rightField.type, leftField.type)) {
+            if (!isSupersetOf(rightField, leftField)) {
                 if (subset === undefined) {
                     subset = i;
                 } else {
@@ -237,14 +234,14 @@ const withoutStruct = (left: StructType, right: StructType): StructType | NeverT
         if (subset === undefined) return NeverType.instance;
 
         // condition 2)
-        return new StructType(
-            left.name,
+        return StructInstanceType.fromDescriptorUnchecked(
+            left.descriptor,
             left.fields.map((leftField, i) => {
                 if (i !== subset) return leftField;
 
                 const rightField = right.fields[i];
 
-                const diff = without(leftField.type, rightField.type);
+                const diff = without(leftField, rightField);
                 if (diff.type === 'never') {
                     throw new Error(
                         'This should not be possible because the left field is guaranteed to be a strict subset of the right field.' +
@@ -253,11 +250,42 @@ const withoutStruct = (left: StructType, right: StructType): StructType | NeverT
                     );
                 }
 
-                return new StructTypeField(leftField.name, diff);
+                return diff;
             })
         );
     }
     return left;
+};
+const complementStruct = (s: StructValueType): WithoutResult<StructValueType> => {
+    switch (s.type) {
+        case 'instance': {
+            const withinDesc = withoutStructInstance(s.descriptor.default, s);
+            return union(withinDesc, new InvertedStructType(new Set([s.descriptor])));
+        }
+        case 'inverted-set': {
+            // return the default instances of the excluded structs
+            return union(...[...s.excluded].map((d) => d.default));
+        }
+        case 'struct': {
+            return NeverType.instance;
+        }
+        default:
+            return assertNever(s);
+    }
+};
+const withoutStruct = (
+    left: StructValueType,
+    right: StructValueType
+): WithoutResult<StructValueType> => {
+    if (right.type === 'struct') return NeverType.instance;
+    if (left.type === 'struct') return complementStruct(right);
+
+    if (left.type === 'instance' && right.type === 'instance') {
+        return withoutStructInstance(left, right);
+    }
+
+    // the usual A \ B = A & ~B
+    return intersect(left, complementStruct(right));
 };
 
 const withoutValue = (left: WithoutLhs<ValueType>, right: ValueType): WithoutResult<ValueType> => {

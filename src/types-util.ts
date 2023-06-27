@@ -6,7 +6,6 @@ import {
     NonIntIntervalType,
     NumericLiteralType,
     StringLiteralType,
-    StructType,
     Type,
     WithUnderlying,
 } from './types';
@@ -27,28 +26,6 @@ export const groupByUnderlying = <T extends Type>(types: readonly T[]): Underlyi
         groups[t.underlying].push(t as never);
     }
     return groups;
-};
-
-export const isSameStructType = (a: StructType, b: StructType): boolean => {
-    if (a.name !== b.name) return false;
-
-    if (a.fields.length !== b.fields.length) {
-        throw new Error(
-            'Invalid struct.' +
-                ' Expected all structs with the same name to have the same number of fields.' +
-                ` a = ${a.getTypeId()} , b = ${b.getTypeId()}`
-        );
-    }
-
-    if (a.fields.some((f, i) => f.name !== b.fields[i].name)) {
-        throw new Error(
-            'Invalid struct.' +
-                ' Expected all structs with the same name to have the same field names.' +
-                ` a = ${a.getTypeId()} , b = ${b.getTypeId()}`
-        );
-    }
-
-    return true;
 };
 
 export const isSameType = (a: Type, b: Type): boolean => a === b || a.getTypeId() === b.getTypeId();

@@ -64,3 +64,5 @@ export const unicodeLength = (s: string): number => [...s].length;
 export const escapeLiteralRegex = (s: string): string => {
     return s.replace(/[()[\]{}\\.+*?^$|]/g, (m) => '\\' + m);
 };
+
+export const isReadonlyArray = Array.isArray as (value: unknown) => value is readonly unknown[];

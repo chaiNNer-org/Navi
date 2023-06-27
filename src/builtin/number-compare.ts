@@ -1,12 +1,13 @@
-import { BOOL, BOOL_FALSE, BOOL_TRUE, REAL } from '../constants';
+import { REAL } from '../constants';
 import { Range } from '../range';
+import { BOOL, BOOL_FALSE, BOOL_TRUE } from '../struct-constants';
 import {
     IntIntervalType,
     IntervalType,
     NonIntIntervalType,
     NumberPrimitive,
     NumericLiteralType,
-    StructType,
+    StructInstanceType,
 } from '../types';
 import { union } from '../union';
 import { Arg, wrapBinary } from './wrap';
@@ -28,7 +29,7 @@ const handleNan = (
     return { has: false, without: n };
 };
 
-const lessThenReal = (a: NonNan, b: NonNan): Arg<StructType> => {
+const lessThenReal = (a: NonNan, b: NonNan): Arg<StructInstanceType> => {
     const l = Range.from(a);
     const r = Range.from(b);
 
@@ -52,7 +53,7 @@ export const lessThan = wrapBinary((a: NumberPrimitive, b: NumberPrimitive) => {
     }
     return lessThenReal(aNan.without, bNan.without);
 });
-const lessThenEqualReal = (a: NonNan, b: NonNan): Arg<StructType> => {
+const lessThenEqualReal = (a: NonNan, b: NonNan): Arg<StructInstanceType> => {
     const l = Range.from(a);
     const r = Range.from(b);
 

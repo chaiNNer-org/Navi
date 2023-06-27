@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 import { assertValidStructFieldName, assertValidStructName } from './names';
-import { binaryCompare } from './util';
+import { EMPTY_ARRAY, binaryCompare } from './util';
 
-export type Type = PrimitiveType | NeverType | AnyType | UnionType | StructType;
-export type ValueType = PrimitiveType | StructType;
+export type Type = PrimitiveType | NeverType | AnyType | UnionType | StructValueType;
+export type ValueType = PrimitiveType | StructValueType;
+export type StructValueType = StructInstanceType | StructType | InvertedStructType;
 export type PrimitiveType = NumberPrimitive | StringPrimitive;
 export type NumberPrimitive =
     | NumberType
@@ -442,7 +443,7 @@ export class NeverType implements TypeBase {
     static readonly instance = new NeverType();
 }
 
-export class StructTypeField {
+export class StructField {
     readonly name: string;
 
     readonly type: NonNeverType;
@@ -453,28 +454,84 @@ export class StructTypeField {
         this.type = type;
     }
 }
-export class StructType implements TypeBase {
-    readonly type = 'struct';
-
-    readonly underlying = 'struct';
-
-    readonly fields: readonly StructTypeField[];
-
+export class StructDescriptor {
     readonly name: string;
+    readonly fields: readonly StructField[];
+    readonly default: StructInstanceType;
 
-    private cachedTypeId: string | undefined;
-
-    constructor(name: string, fields: readonly StructTypeField[] = []) {
+    constructor(name: string, fields: readonly StructField[] = EMPTY_ARRAY) {
         assertValidStructName(name);
         this.name = name;
         this.fields = fields;
+
+        this.default = StructInstanceType.fromDescriptorUnchecked(
+            this,
+            fields.length === 0 ? EMPTY_ARRAY : fields.map((f) => f.type)
+        );
+    }
+
+    getField(name: string): StructField | undefined {
+        const index = this.fields.findIndex((f) => f.name === name);
+        if (index === -1) {
+            return undefined;
+        }
+        return this.fields[index];
+    }
+
+    static compare = (a: StructDescriptor, b: StructDescriptor): number => {
+        if (a.fields.length !== b.fields.length) {
+            return a.fields.length - b.fields.length;
+        }
+
+        return binaryCompare(a.name, b.name);
+    };
+}
+export class StructInstanceType implements TypeBase {
+    readonly type = 'instance';
+
+    readonly underlying = 'struct';
+
+    readonly descriptor: StructDescriptor;
+
+    readonly fields: readonly NonNeverType[];
+
+    private cachedTypeId: string | undefined;
+
+    private constructor(descriptor: StructDescriptor, fields: readonly NonNeverType[]) {
+        if (fields.length !== descriptor.fields.length) {
+            throw new Error(
+                `The number of fields (${fields.length}) for ${descriptor.name} does not match the number of fields in the descriptor (${descriptor.fields.length}).`
+            );
+        }
+        this.descriptor = descriptor;
+        this.fields = fields;
+    }
+
+    /**
+     * Creates a new instance of the given struct *without* verifying that the fields match the descriptor.
+     *
+     * Prefer using `createInstance` instead.
+     */
+    static fromDescriptorUnchecked(
+        descriptor: StructDescriptor,
+        fields: readonly NonNeverType[]
+    ): StructInstanceType {
+        return new StructInstanceType(descriptor, fields);
+    }
+
+    getField(name: string): NonNeverType | undefined {
+        const index = this.descriptor.fields.findIndex((f) => f.name === name);
+        if (index === -1) {
+            return undefined;
+        }
+        return this.fields[index];
     }
 
     getTypeId(): string {
-        if (this.fields.length === 0) return this.name;
+        if (this.fields.length === 0) return this.descriptor.name;
         if (this.cachedTypeId === undefined) {
-            this.cachedTypeId = `${this.name} { ${this.fields
-                .map((f) => `${f.name}: ${f.type.getTypeId()}`)
+            this.cachedTypeId = `${this.descriptor.name} { ${this.descriptor.fields
+                .map((f, i) => `${f.name}: ${this.fields[i].getTypeId()}`)
                 .join(', ')} }`;
         }
         return this.cachedTypeId;
@@ -483,4 +540,55 @@ export class StructType implements TypeBase {
     toString(): string {
         return this.getTypeId();
     }
+}
+export class InvertedStructType implements TypeBase {
+    readonly type = 'inverted-set';
+
+    readonly underlying = 'struct';
+
+    readonly excluded: ReadonlySet<StructDescriptor>;
+
+    private cachedTypeId: string | undefined;
+
+    constructor(excluded: ReadonlySet<StructDescriptor>) {
+        if (excluded.size === 0)
+            throw new Error('An inverted struct set must exclude at least one struct.');
+        this.excluded = excluded;
+    }
+
+    has(s: StructDescriptor): boolean {
+        return !this.excluded.has(s);
+    }
+
+    getTypeId(): string {
+        if (this.cachedTypeId === undefined) {
+            const union = [...this.excluded]
+                .sort(StructDescriptor.compare)
+                .map((s) => s.name)
+                .join(' | ');
+            this.cachedTypeId = `notStructs(${union})`;
+        }
+        return this.cachedTypeId;
+    }
+
+    toString(): string {
+        return this.getTypeId();
+    }
+}
+export class StructType implements TypeBase {
+    readonly type = 'struct';
+
+    readonly underlying = 'struct';
+
+    private constructor() {}
+
+    getTypeId(): string {
+        return 'anyStruct';
+    }
+
+    toString(): string {
+        return this.getTypeId();
+    }
+
+    static readonly instance = new StructType();
 }

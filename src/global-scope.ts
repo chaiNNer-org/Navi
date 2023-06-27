@@ -35,6 +35,7 @@ import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { IntrinsicFunctionDefinition, Scope, ScopeBuilder } from './scope';
 import { SourceDocument } from './source';
+import { BOOL_FALSE, BOOL_TRUE } from './struct-constants';
 import { AnyType, NeverType, NumberType, StringType, Type } from './types';
 import { assertNever } from './util';
 
@@ -119,6 +120,9 @@ const createGlobalScope = (): Scope => {
             builder.add(d);
         }
     }
+
+    builder.addStructDescriptor(BOOL_TRUE.descriptor);
+    builder.addStructDescriptor(BOOL_FALSE.descriptor);
 
     return builder.createScope();
 };

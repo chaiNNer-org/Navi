@@ -1,4 +1,4 @@
-import { CanonicalTypes, Type, WithType, WithUnderlying } from './types';
+import { CanonicalTypes, StructDescriptor, Type, WithType, WithUnderlying } from './types';
 import { Comparator, binaryCompare, compareNumber, compareSequences } from './util';
 
 const numberOrder: readonly WithUnderlying<'number'>['type'][] = [
@@ -13,6 +13,11 @@ const stringOrder: readonly WithUnderlying<'string'>['type'][] = [
     'string',
     'inverted-set',
 ];
+const structOrder: readonly WithUnderlying<'struct'>['type'][] = [
+    'instance',
+    'inverted-set',
+    'struct',
+];
 const underlyingOrder: readonly Type['underlying'][] = [
     'never',
     'any',
@@ -22,9 +27,10 @@ const underlyingOrder: readonly Type['underlying'][] = [
     'union',
 ];
 
-const numberComparators: {
-    [key in WithUnderlying<'number'>['type']]: Comparator<WithType<key, WithUnderlying<'number'>>>;
-} = {
+type Comparators<T extends Type['underlying']> = {
+    [key in WithUnderlying<T>['type']]: Comparator<WithType<key, WithUnderlying<T>>>;
+};
+const numberComparators: Comparators<'number'> = {
     number: () => 0,
     literal: (a, b) => compareNumber(a.value, b.value),
     'int-interval': (a, b) => compareNumber(a.min, b.min) || compareNumber(a.max, b.max),
@@ -34,9 +40,7 @@ const numberComparators: {
         compareNumber(a.max, b.max) ||
         compareNumber(a.bounds, b.bounds),
 };
-const stringComparators: {
-    [key in WithUnderlying<'string'>['type']]: Comparator<WithType<key, WithUnderlying<'string'>>>;
-} = {
+const stringComparators: Comparators<'string'> = {
     string: () => 0,
     literal: (a, b) => binaryCompare(a.value, b.value),
     'inverted-set': (a, b) => {
@@ -47,6 +51,22 @@ const stringComparators: {
             binaryCompare
         );
     },
+};
+const structComparators: Comparators<'struct'> = {
+    instance: (a, b) => {
+        if (a.descriptor !== b.descriptor)
+            return StructDescriptor.compare(a.descriptor, b.descriptor);
+        return compareSequences(a.fields, b.fields, compareTypes);
+    },
+    'inverted-set': (a, b) => {
+        if (a.excluded.size !== b.excluded.size) return a.excluded.size - b.excluded.size;
+        return compareSequences(
+            [...a.excluded].sort(StructDescriptor.compare),
+            [...b.excluded].sort(StructDescriptor.compare),
+            StructDescriptor.compare
+        );
+    },
+    struct: () => 0,
 };
 const comparators: {
     [key in Type['underlying']]: Comparator<WithUnderlying<key>>;
@@ -66,15 +86,10 @@ const comparators: {
         return stringComparators[a.type](a as never, b as never);
     },
     struct: (a, b) => {
-        if (a.fields.length !== b.fields.length) return a.fields.length - b.fields.length;
-        if (a.name !== b.name) return binaryCompare(a.name, b.name);
-
-        return compareSequences(
-            a.fields.map((f) => f.type),
-            b.fields.map((f) => f.type),
-
-            compareTypes
-        );
+        if (a.type !== b.type) {
+            return structOrder.indexOf(a.type) - structOrder.indexOf(b.type);
+        }
+        return structComparators[a.type](a as never, b as never);
     },
     union: (a, b) => {
         return compareSequences(a.items, b.items, compareTypes);

@@ -6,9 +6,11 @@ import {
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
+    InvertedStructType,
     NeverType,
     NonIntIntervalType,
     NonNever,
+    NonNeverType,
     NonTrivialType,
     NumberPrimitive,
     NumberType,
@@ -16,13 +18,15 @@ import {
     StringLiteralType,
     StringPrimitive,
     StringType,
+    StructDescriptor,
+    StructInstanceType,
     StructType,
-    StructTypeField,
+    StructValueType,
     Type,
     UnionType,
     ValueType,
 } from './types';
-import { intInterval, isSameStructType, newBounds } from './types-util';
+import { intInterval, isSameType, newBounds } from './types-util';
 import { NonEmptyArray, assertNever, sameNumber } from './util';
 
 const unionLiteralIntInterval = (n: number, b: IntIntervalType): NumberPrimitive | undefined => {
@@ -379,23 +383,63 @@ const unionString = (a: StringPrimitive, b: StringPrimitive): StringPrimitive | 
     return undefined;
 };
 
-const unionStructField = (a: StructTypeField, b: StructTypeField): StructTypeField => {
-    const type = union(a.type, b.type);
-    return new StructTypeField(a.name, type);
-};
-const unionStruct = (a: StructType, b: StructType): StructType | undefined => {
-    if (!isSameStructType(a, b)) return undefined;
+const unionStructInstance = (
+    a: StructInstanceType,
+    b: StructInstanceType
+): StructInstanceType | undefined => {
+    if (a.descriptor !== b.descriptor) return undefined;
 
     if (a.fields.length === 0) return a;
 
-    const fields: StructTypeField[] = [];
+    const fields: NonNeverType[] = [];
     for (let i = 0; i < a.fields.length; i += 1) {
         const aField = a.fields[i];
         const bField = b.fields[i];
 
-        fields.push(unionStructField(aField, bField));
+        fields.push(union(aField, bField));
     }
-    return new StructType(a.name, fields);
+    return StructInstanceType.fromDescriptorUnchecked(a.descriptor, fields);
+};
+const unionInvertedStruct = (
+    a: InvertedStructType,
+    b: InvertedStructType | StructInstanceType
+): InvertedStructType | StructType | undefined => {
+    if (b.type === 'instance') {
+        if (a.has(b.descriptor)) return a;
+
+        if (!isSameType(b, b.descriptor.default)) {
+            // Since b is only a subset of the full definition type, we can't add the full definition type to the inverted set
+            return undefined;
+        }
+
+        // remove b's descriptor from the set of excluded descriptor
+        if (a.excluded.size === 1) return StructType.instance;
+
+        const excluded = new Set(a.excluded);
+        excluded.delete(b.descriptor);
+        return new InvertedStructType(excluded);
+    }
+
+    // we need to the intersection of the excluded strings
+    const intersection = new Set<StructDescriptor>();
+    for (const aValue of a.excluded) {
+        if (b.excluded.has(aValue)) {
+            intersection.add(aValue);
+        }
+    }
+
+    if (intersection.size === 0) return StructType.instance;
+    if (intersection.size === a.excluded.size) return a;
+    if (intersection.size === b.excluded.size) return b;
+    return new InvertedStructType(intersection);
+};
+const unionStruct = (a: StructValueType, b: StructValueType): StructValueType | undefined => {
+    if (a.type === 'struct' || b.type === 'struct') return StructType.instance;
+
+    if (a.type === 'inverted-set') return unionInvertedStruct(a, b);
+    if (b.type === 'inverted-set') return unionInvertedStruct(b, a);
+
+    return unionStructInstance(a, b);
 };
 
 const unionIntoSet = <T>(
@@ -434,7 +478,7 @@ class Union {
 
     private readonly string: StringPrimitive[] = [];
 
-    private readonly struct: StructType[] = [];
+    private readonly struct: StructValueType[] = [];
 
     constructor(items?: CanonicalTypes<ValueType>) {
         if (items) {
