@@ -27350,6 +27350,12 @@ true != false
 string | number
 =>> number | string
 
+string | anyStruct
+=>> string | anyStruct
+
+number | anyStruct
+=>> number | anyStruct
+
 string | number | anyStruct
 =>> any"
 `;

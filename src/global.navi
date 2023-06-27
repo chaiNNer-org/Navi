@@ -154,8 +154,6 @@ intrinsic def bool::or(...values: bool): bool;
 
 // structs
 
-let anyStruct = match any { number | string => never, _ as x => x };
-
 def notStructs(structs: anyStruct): anyStruct {
     match anyStruct {
         structs => never,

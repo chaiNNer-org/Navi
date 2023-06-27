@@ -423,6 +423,8 @@ test('Snippet evaluation', () => {
         String.raw`true != false`,
 
         String.raw`string | number`,
+        String.raw`string | anyStruct`,
+        String.raw`number | anyStruct`,
         String.raw`string | number | anyStruct`,
     ];
 

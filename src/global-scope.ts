@@ -36,7 +36,7 @@ import { parseDefinitions } from './parse';
 import { IntrinsicFunctionDefinition, Scope, ScopeBuilder } from './scope';
 import { SourceDocument } from './source';
 import { BOOL_FALSE, BOOL_TRUE } from './struct-constants';
-import { AnyType, NeverType, NumberType, StringType, Type } from './types';
+import { AnyType, NeverType, NumberType, StringType, StructType, Type } from './types';
 import { assertNever } from './util';
 
 const createGlobalScope = (): Scope => {
@@ -47,6 +47,7 @@ const createGlobalScope = (): Scope => {
     builder.add(new VariableDefinition('never', NeverType.instance));
     builder.add(new VariableDefinition('number', NumberType.instance));
     builder.add(new VariableDefinition('string', StringType.instance));
+    builder.add(new VariableDefinition('anyStruct', StructType.instance));
 
     const intrinsic: Record<string, (...args: NeverType[]) => Type> = {
         // number

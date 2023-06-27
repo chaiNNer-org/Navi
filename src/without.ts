@@ -318,7 +318,9 @@ const withoutValue = (left: WithoutLhs<ValueType>, right: ValueType): WithoutRes
             return assertNever(right);
     }
 
-    return union(...groups.number, ...groups.string, ...groups.struct, ...other);
+    const result = union(...groups.number, ...groups.string, ...groups.struct, ...other);
+    if (result.type === 'any') throw new Error('without should never return any');
+    return result;
 };
 
 /**
