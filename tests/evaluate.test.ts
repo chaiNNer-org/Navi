@@ -421,6 +421,11 @@ test('Snippet evaluation', () => {
         String.raw`"foo" == bool`,
         String.raw`true == true`,
         String.raw`true != false`,
+
+        String.raw`string | number`,
+        String.raw`string | anyStruct`,
+        String.raw`number | anyStruct`,
+        String.raw`string | number | anyStruct`,
     ];
 
     const actual = snippets

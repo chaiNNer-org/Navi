@@ -151,3 +151,12 @@ def bool::not(value: bool): bool {
 }
 intrinsic def bool::and(...values: bool): bool;
 intrinsic def bool::or(...values: bool): bool;
+
+// structs
+
+def notStructs(structs: anyStruct): anyStruct {
+    match anyStruct {
+        structs => never,
+        _ as inv => inv
+    }
+}

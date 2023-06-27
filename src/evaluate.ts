@@ -8,6 +8,7 @@ import {
     NamedExpression,
     ScopeExpression,
     StructDefinition,
+    StructDefinitionField,
     StructExpression,
     StructExpressionField,
     VariableDefinition,
@@ -26,7 +27,14 @@ import {
     ScopeStructDefinition,
     ScopeVariableDefinition,
 } from './scope';
-import { NeverType, StructType, StructTypeField, Type } from './types';
+import {
+    NeverType,
+    NonNeverType,
+    StructDescriptor,
+    StructField,
+    StructInstanceType,
+    Type,
+} from './types';
 import { union } from './union';
 import { assertNever } from './util';
 import { without } from './without';
@@ -92,6 +100,12 @@ export type ErrorDetails =
           type: 'Invalid structure definition';
           definition: StructDefinition;
           details: ErrorDetails;
+          message: string;
+      }
+    | {
+          type: 'Invalid structure definition field';
+          definition: StructDefinition;
+          field: StructDefinitionField;
           message: string;
       }
     | {
@@ -180,8 +194,8 @@ const resolveStruct = (
 
     return { definition, scope };
 };
-const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructType | NeverType => {
-    const fields: StructTypeField[] = [];
+const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructDescriptor => {
+    const fields: StructField[] = [];
     for (const f of def.fields) {
         let type;
         try {
@@ -197,10 +211,17 @@ const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructTy
             }
             throw error;
         }
-        if (type.type === 'never') return NeverType.instance;
-        fields.push(new StructTypeField(f.name, type));
+        if (type.type === 'never') {
+            throw new EvaluationError({
+                type: 'Invalid structure definition field',
+                definition: def,
+                field: f,
+                message: `The structure definition field ${f.name} for ${def.name} is always \`never\`.`,
+            });
+        }
+        fields.push(new StructField(f.name, type));
     }
-    return new StructType(def.name, fields);
+    return new StructDescriptor(def.name, fields);
 };
 const evaluateStructImpl = (
     expression: StructExpression,
@@ -208,12 +229,11 @@ const evaluateStructImpl = (
     definition: ScopeStructDefinition,
     definitionScope: Scope
 ): Type => {
-    definition.default ??= evaluateStructDefinition(definition.definition, definitionScope);
-    if (definition.default.type === 'never') return NeverType.instance;
+    definition.descriptor ??= evaluateStructDefinition(definition.definition, definitionScope);
 
     // no fields
     if (expression.fields.length === 0) {
-        return definition.default;
+        return definition.descriptor.default;
     }
 
     // check for unknown fields
@@ -232,8 +252,8 @@ const evaluateStructImpl = (
 
     const expressionFields = new Map(expression.fields.map((f) => [f.name, f.type]));
 
-    const fields: StructTypeField[] = [];
-    for (const dField of definition.default.fields) {
+    const fields: NonNeverType[] = [];
+    for (const dField of definition.descriptor.fields) {
         const eField = expressionFields.get(dField.name);
         let type;
         if (eField) {
@@ -255,9 +275,9 @@ const evaluateStructImpl = (
             // default to definition type
             type = dField.type;
         }
-        fields.push(new StructTypeField(dField.name, type));
+        fields.push(type);
     }
-    return new StructType(expression.name, fields);
+    return StructInstanceType.fromDescriptorUnchecked(definition.descriptor, fields);
 };
 const evaluateStruct = (expression: StructExpression, scope: Scope): Type => {
     const { definition, scope: definitionScope } = resolveStruct(expression, scope);
@@ -360,18 +380,30 @@ const evaluateFieldAccess = (expression: FieldAccessExpression, scope: Scope): T
             });
         }
 
-        const field = t.fields.find((f) => f.name === expression.field);
+        if (t.type === 'struct' || t.type === 'inverted-set') {
+            throw new EvaluationError({
+                type: 'Invalid field access',
+                expression,
+                fullExpressionType: type,
+                offendingType: type,
+                message: `\`${t.getTypeId()}\` is not guaranteed to have a field \`${
+                    expression.field
+                }\`.`,
+            });
+        }
+
+        const field = t.getField(expression.field);
         if (!field) {
             throw new EvaluationError({
                 type: 'Invalid field access',
                 expression,
                 fullExpressionType: type,
                 offendingType: t,
-                message: `The ${t.name} structure does not define a field \`${expression.field}\`.`,
+                message: `The ${t.descriptor.name} structure does not define a field \`${expression.field}\`.`,
             });
         }
 
-        accessed.push(field.type);
+        accessed.push(field);
     }
     return union(...accessed);
 };

@@ -4,19 +4,22 @@ import {
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
+    InvertedStructType,
     NeverType,
     NonIntIntervalType,
+    NonNeverType,
     NumberPrimitive,
     NumericLiteralType,
     StringLiteralType,
     StringPrimitive,
+    StructInstanceType,
     StructType,
-    StructTypeField,
+    StructValueType,
     Type,
     UnionType,
     ValueType,
 } from './types';
-import { interval, isSameStructType, newBounds } from './types-util';
+import { interval, newBounds } from './types-util';
 import { unionValueTypes } from './union';
 import { EMPTY_ARRAY, assertNever, sameNumber } from './util';
 
@@ -170,17 +173,43 @@ const intersectString = (a: StringPrimitive, b: StringPrimitive): StringPrimitiv
     return intersectInvertedStringSet(a, b);
 };
 
-const intersectStruct = (a: StructType, b: StructType): StructType | NeverType => {
-    if (!isSameStructType(a, b)) return NeverType.instance;
+const intersectStructInstance = (
+    a: StructInstanceType,
+    b: StructInstanceType
+): StructInstanceType | NeverType => {
+    if (a.descriptor !== b.descriptor) return NeverType.instance;
     if (a.fields.length === 0) return a;
 
-    const items: StructTypeField[] = [];
+    const fields: NonNeverType[] = [];
     for (let i = 0; i < a.fields.length; i += 1) {
-        const t = intersect(a.fields[i].type, b.fields[i].type);
+        const t = intersect(a.fields[i], b.fields[i]);
         if (t.type === 'never') return NeverType.instance;
-        items.push(new StructTypeField(a.fields[i].name, t));
+        fields.push(t);
     }
-    return new StructType(a.name, items);
+    return StructInstanceType.fromDescriptorUnchecked(a.descriptor, fields);
+};
+const intersectInvertedStructType = (
+    a: InvertedStructType,
+    b: StructInstanceType
+): StructInstanceType | NeverType => {
+    if (a.has(b.descriptor)) return b;
+    return NeverType.instance;
+};
+const intersectStruct = (a: StructValueType, b: StructValueType): StructValueType | NeverType => {
+    if (a.type === 'struct') return b;
+    if (b.type === 'struct') return a;
+
+    if (a.type === 'instance') {
+        if (b.type === 'instance') return intersectStructInstance(a, b);
+        return intersectInvertedStructType(b, a);
+    }
+    if (b.type === 'instance') return intersectInvertedStructType(a, b);
+
+    // to find the intersection of 2 inverted sets, we have to compute their union
+    const union = new Set([...a.excluded, ...b.excluded]);
+    if (union.size === a.excluded.size) return a;
+    if (union.size === b.excluded.size) return b;
+    return new InvertedStructType(union);
 };
 
 const intersectValueType = (a: ValueType, b: ValueType): Arg<ValueType> => {
@@ -192,7 +221,7 @@ const intersectValueType = (a: ValueType, b: ValueType): Arg<ValueType> => {
         case 'string':
             return intersectString(a, b as StringPrimitive);
         case 'struct':
-            return intersectStruct(a, b as StructType);
+            return intersectStruct(a, b as StructValueType);
         default:
             return assertNever(a);
     }

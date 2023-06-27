@@ -1,7 +1,6 @@
 import antlr4 from 'antlr4';
 import NaviLexer from './antlr4/NaviLexer';
 import NaviParser from './antlr4/NaviParser';
-import { BOOL_FALSE, BOOL_TRUE } from './constants';
 import { Declaration, IntrinsicFunctionDeclaration } from './declaration';
 import {
     Definition,
@@ -24,6 +23,7 @@ import {
 } from './expression';
 import { isValidIdentifier } from './names';
 import { Source, SourceDocument } from './source';
+import { BOOL_FALSE, BOOL_TRUE } from './struct-constants';
 import {
     AnyType,
     Bounds,

@@ -4,6 +4,7 @@ export * from './expression';
 export * from './scope';
 export * from './source';
 export * from './types';
+export { createInstance } from './create-instance';
 export { getReferences } from './expression-util';
 export { globalScope } from './global-scope';
 export {

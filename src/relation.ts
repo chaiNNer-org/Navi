@@ -1,5 +1,11 @@
-import { NumberPrimitive, StringPrimitive, StructType, Type, ValueType } from './types';
-import { isSameStructType } from './types-util';
+import {
+    NumberPrimitive,
+    StringPrimitive,
+    StructInstanceType,
+    StructValueType,
+    Type,
+    ValueType,
+} from './types';
 import { assertNever, assertType, sameNumber } from './util';
 
 const numberIsSubsetOf = (left: NumberPrimitive, right: NumberPrimitive): boolean => {
@@ -31,7 +37,7 @@ const stringIsSubsetOf = (left: StringPrimitive, right: StringPrimitive): boolea
 
     if (right.type === 'literal') return false;
 
-    // Both left and right are inverted string set:
+    // Both left and right are inverted string sets:
     //   L ⊆ R
     // = comp(L.excluded) ⊆ comp(R.excluded)
     // = L.excluded ⊇ R.excluded
@@ -44,14 +50,33 @@ const stringIsSubsetOf = (left: StringPrimitive, right: StringPrimitive): boolea
     return true;
 };
 
-const structIsSubsetOf = (left: StructType, right: StructType): boolean => {
-    if (!isSameStructType(left, right)) return false;
+const structInstanceIsSubsetOf = (left: StructInstanceType, right: StructInstanceType): boolean => {
+    if (left.descriptor !== right.descriptor) return false;
 
     for (let i = 0; i < left.fields.length; i += 1) {
-        const l = left.fields[i].type;
-        const r = right.fields[i].type;
+        const l = left.fields[i];
+        const r = right.fields[i];
 
         if (!isSubsetOf(l, r)) return false;
+    }
+    return true;
+};
+const structIsSubsetOf = (left: StructValueType, right: StructValueType): boolean => {
+    if (right.type === 'struct') return true;
+    if (left.type === 'struct') return false;
+
+    if (left.type === 'instance') {
+        if (right.type === 'instance') {
+            return structInstanceIsSubsetOf(left, right);
+        }
+        return right.has(left.descriptor);
+    }
+
+    if (right.type === 'instance') return false;
+
+    // Both left and right are inverted sets. Same as with inverted string sets.
+    for (const rValue of right.excluded) {
+        if (!left.excluded.has(rValue)) return false;
     }
     return true;
 };
@@ -65,7 +90,7 @@ const valueIsSubsetOf = (left: ValueType, right: ValueType): boolean => {
         case 'string':
             return stringIsSubsetOf(left, right as StringPrimitive);
         case 'struct':
-            return structIsSubsetOf(left, right as StructType);
+            return structIsSubsetOf(left, right as StructValueType);
         default:
             return assertNever(left);
     }

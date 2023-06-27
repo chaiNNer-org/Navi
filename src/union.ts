@@ -6,9 +6,11 @@ import {
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
+    InvertedStructType,
     NeverType,
     NonIntIntervalType,
     NonNever,
+    NonNeverType,
     NonTrivialType,
     NumberPrimitive,
     NumberType,
@@ -16,13 +18,15 @@ import {
     StringLiteralType,
     StringPrimitive,
     StringType,
+    StructDescriptor,
+    StructInstanceType,
     StructType,
-    StructTypeField,
+    StructValueType,
     Type,
     UnionType,
     ValueType,
 } from './types';
-import { intInterval, isSameStructType, newBounds } from './types-util';
+import { intInterval, isSameType, newBounds } from './types-util';
 import { NonEmptyArray, assertNever, sameNumber } from './util';
 
 const unionLiteralIntInterval = (n: number, b: IntIntervalType): NumberPrimitive | undefined => {
@@ -379,23 +383,63 @@ const unionString = (a: StringPrimitive, b: StringPrimitive): StringPrimitive | 
     return undefined;
 };
 
-const unionStructField = (a: StructTypeField, b: StructTypeField): StructTypeField => {
-    const type = union(a.type, b.type);
-    return new StructTypeField(a.name, type);
-};
-const unionStruct = (a: StructType, b: StructType): StructType | undefined => {
-    if (!isSameStructType(a, b)) return undefined;
+const unionStructInstance = (
+    a: StructInstanceType,
+    b: StructInstanceType
+): StructInstanceType | undefined => {
+    if (a.descriptor !== b.descriptor) return undefined;
 
     if (a.fields.length === 0) return a;
 
-    const fields: StructTypeField[] = [];
+    const fields: NonNeverType[] = [];
     for (let i = 0; i < a.fields.length; i += 1) {
         const aField = a.fields[i];
         const bField = b.fields[i];
 
-        fields.push(unionStructField(aField, bField));
+        fields.push(union(aField, bField));
     }
-    return new StructType(a.name, fields);
+    return StructInstanceType.fromDescriptorUnchecked(a.descriptor, fields);
+};
+const unionInvertedStruct = (
+    a: InvertedStructType,
+    b: InvertedStructType | StructInstanceType
+): InvertedStructType | StructType | undefined => {
+    if (b.type === 'instance') {
+        if (a.has(b.descriptor)) return a;
+
+        if (!isSameType(b, b.descriptor.default)) {
+            // Since b is only a subset of the full definition type, we can't add the full definition type to the inverted set
+            return undefined;
+        }
+
+        // remove b's descriptor from the set of excluded descriptor
+        if (a.excluded.size === 1) return StructType.instance;
+
+        const excluded = new Set(a.excluded);
+        excluded.delete(b.descriptor);
+        return new InvertedStructType(excluded);
+    }
+
+    // we need to the intersection of the excluded strings
+    const intersection = new Set<StructDescriptor>();
+    for (const aValue of a.excluded) {
+        if (b.excluded.has(aValue)) {
+            intersection.add(aValue);
+        }
+    }
+
+    if (intersection.size === 0) return StructType.instance;
+    if (intersection.size === a.excluded.size) return a;
+    if (intersection.size === b.excluded.size) return b;
+    return new InvertedStructType(intersection);
+};
+const unionStruct = (a: StructValueType, b: StructValueType): StructValueType | undefined => {
+    if (a.type === 'struct' || b.type === 'struct') return StructType.instance;
+
+    if (a.type === 'inverted-set') return unionInvertedStruct(a, b);
+    if (b.type === 'inverted-set') return unionInvertedStruct(b, a);
+
+    return unionStructInstance(a, b);
 };
 
 const unionIntoSet = <T>(
@@ -434,7 +478,7 @@ class Union {
 
     private readonly string: StringPrimitive[] = [];
 
-    private readonly struct: StructType[] = [];
+    private readonly struct: StructValueType[] = [];
 
     constructor(items?: CanonicalTypes<ValueType>) {
         if (items) {
@@ -477,7 +521,19 @@ class Union {
         }
     }
 
-    getResult(): ValueType | NeverType | UnionType {
+    getResult(): ValueType | NeverType | UnionType | AnyType {
+        if (
+            this.number.length === 1 &&
+            this.number[0].type === 'number' &&
+            this.string.length === 1 &&
+            this.string[0].type === 'string' &&
+            this.struct.length === 1 &&
+            this.struct[0].type === 'struct'
+        ) {
+            // any = number | string | struct
+            return AnyType.instance;
+        }
+
         const items = canonicalize<ValueType>([...this.number, ...this.string, ...this.struct]);
 
         if (items.length === 0) return NeverType.instance;
@@ -489,9 +545,17 @@ class Union {
 export function unionValueTypes(
     ...types: NumberPrimitive[]
 ): NumberPrimitive | UnionType<NumberPrimitive> | NeverType;
-export function unionValueTypes(...types: ValueType[]): ValueType | UnionType | NeverType;
+export function unionValueTypes(
+    ...types: StringPrimitive[]
+): StringPrimitive | UnionType<StringPrimitive> | NeverType;
+export function unionValueTypes(
+    ...types: StructValueType[]
+): StructValueType | UnionType<StructValueType> | NeverType;
+export function unionValueTypes(...types: ValueType[]): ValueType | UnionType | NeverType | AnyType;
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function unionValueTypes(...types: ValueType[]): ValueType | UnionType | NeverType {
+export function unionValueTypes(
+    ...types: ValueType[]
+): ValueType | UnionType | NeverType | AnyType {
     if (types.length === 0) return NeverType.instance;
     if (types.length === 1) return types[0];
 
@@ -508,22 +572,26 @@ type ClosedValueType<T extends ValueType> =
     | (T extends NumberPrimitive ? NumberPrimitive : never)
     | (T extends StringPrimitive ? StringPrimitive : never)
     | T;
+type CanBeAny<T extends Type> = (T extends NumberPrimitive ? unknown : never) &
+    (T extends StringPrimitive ? unknown : never) &
+    (T extends StructValueType ? unknown : never);
+type UnderUnion<T extends ValueType> = T | UnionType<T>;
 type Closed<T extends Type> =
-    | (T extends NumberPrimitive ? NumberPrimitive | UnionType<NumberPrimitive> : never)
-    | (T extends StringPrimitive ? StringPrimitive | UnionType<StringPrimitive> : never)
-    | (T extends StructType ? StructType | UnionType<StructType> : never)
-    | (T extends UnionType<infer U> ? UnionType<ClosedValueType<U>> : never)
+    | (T extends NumberPrimitive ? UnderUnion<NumberPrimitive> : never)
+    | (T extends StringPrimitive ? UnderUnion<StringPrimitive> : never)
+    | (T extends StructInstanceType
+          ? UnderUnion<StructInstanceType>
+          : T extends StructValueType
+          ? UnderUnion<StructValueType>
+          : never)
+    | (CanBeAny<T> & AnyType)
+    | (T extends UnionType<infer U> ? UnderUnion<ClosedValueType<U>> : never)
     | T;
 
 type Union2<A extends Type, B extends Type> =
     | Closed<NonNever<A>>
     | Closed<NonNever<B>>
     | (A extends NeverType ? (B extends NeverType ? NeverType : never) : never);
-type Union3<A extends Type, B extends Type, C extends Type> = Union2<A, Union2<B, C>>;
-type Union4<A extends Type, B extends Type, C extends Type, D extends Type> = Union2<
-    A,
-    Union2<B, Union2<C, D>>
->;
 
 export function union(): NeverType;
 export function union<A extends Type>(a: A): A;
@@ -532,13 +600,13 @@ export function union<A extends Type, B extends Type, C extends Type>(
     a: A,
     b: B,
     c: C
-): Union3<A, B, C>;
+): Union2<A, B | C>;
 export function union<A extends Type, B extends Type, C extends Type, D extends Type>(
     a: A,
     b: B,
     c: C,
     d: D
-): Union4<A, B, C, D>;
+): Union2<A, B | C | D>;
 export function union<T extends Type>(...types: T[]): Closed<T> | NeverType;
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function union(...types: Type[]): Type {

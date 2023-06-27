@@ -1,4 +1,11 @@
-import { NeverType, NumberPrimitive, StringPrimitive, UnionType, ValueType } from '../types';
+import {
+    NeverType,
+    NumberPrimitive,
+    StringPrimitive,
+    StructValueType,
+    UnionType,
+    ValueType,
+} from '../types';
 import { union } from '../union';
 import { EMPTY_ARRAY, assertNever } from '../util';
 
@@ -143,6 +150,10 @@ export function wrapReducerVarArgs(
     neutral: Arg<NumberPrimitive>,
     fn: (a: NumberPrimitive, b: NumberPrimitive) => Arg<NumberPrimitive>
 ): ReducerVarArgsFn<NumberPrimitive>;
+export function wrapReducerVarArgs(
+    neutral: Arg<StructValueType>,
+    fn: (a: StructValueType, b: StructValueType) => Arg<StructValueType>
+): ReducerVarArgsFn<StructValueType>;
 export function wrapReducerVarArgs<T extends ValueType>(
     neutral: Arg<T>,
     fn: (a: T, b: T) => Arg<T>

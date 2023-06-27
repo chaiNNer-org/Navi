@@ -1,16 +1,19 @@
-import { BOOL, BOOL_FALSE, BOOL_TRUE } from '../src/constants';
+import { UINT } from '../src/constants';
+import { createInstance } from '../src/create-instance';
 import {
     Expression,
     FieldAccessExpression,
     IntersectionExpression,
     UnionExpression,
 } from '../src/expression';
+import { BOOL, BOOL_FALSE, BOOL_TRUE } from '../src/struct-constants';
 import {
     AnyType,
     Bounds,
     IntIntervalType,
     IntervalType,
     InvertedStringSetType,
+    InvertedStructType,
     NeverType,
     NonIntIntervalType,
     NumberPrimitive,
@@ -18,11 +21,13 @@ import {
     StringLiteralType,
     StringPrimitive,
     StringType,
+    StructDescriptor,
+    StructField,
+    StructInstanceType,
     StructType,
-    StructTypeField,
+    StructValueType,
     Type,
     UnionType,
-    ValueType,
 } from '../src/types';
 import { literal } from '../src/types-util';
 import { union } from '../src/union';
@@ -127,30 +132,31 @@ export const strings: readonly (StringPrimitive | UnionType<StringPrimitive>)[] 
     new InvertedStringSetType(new Set(['bar'])),
     new InvertedStringSetType(new Set([''])),
 ];
-export const bools: readonly (StructType | UnionType<StructType>)[] = [BOOL_FALSE, BOOL_TRUE, BOOL];
-export const structs: readonly (StructType | UnionType<StructType>)[] = [
-    new StructType('null'),
+export const bools: readonly (StructInstanceType | UnionType<StructInstanceType>)[] = [
+    BOOL_FALSE,
+    BOOL_TRUE,
+    BOOL,
+];
 
-    new StructType('Foo', [
-        new StructTypeField('a', literal(1)),
-        new StructTypeField('b', literal(2)),
-    ]),
-    new StructType('Foo', [
-        new StructTypeField('a', literal(3)),
-        new StructTypeField('b', literal(2)),
-    ]),
-    new StructType('Foo', [
-        new StructTypeField('a', literal(3)),
-        new StructTypeField('b', literal(4)),
-    ]),
-    new StructType('Foo', [
-        new StructTypeField('a', union(literal(1), literal(3)) as ValueType),
-        new StructTypeField('b', literal(2)),
-    ]),
-    new StructType('Foo', [
-        new StructTypeField('a', literal(3)),
-        new StructTypeField('b', NumberType.instance),
-    ]),
+const FooDesc = new StructDescriptor('Foo', [
+    new StructField('a', UINT),
+    new StructField('b', NumberType.instance),
+]);
+export const structs: readonly (StructValueType | UnionType<StructValueType>)[] = [
+    ...bools,
+
+    createInstance(FooDesc, { a: literal(1), b: literal(2) }),
+    createInstance(FooDesc, { a: literal(3), b: literal(2) }),
+    createInstance(FooDesc, { a: literal(3), b: literal(4) }),
+    createInstance(FooDesc, { a: union(literal(1), literal(3)), b: literal(2) }),
+    createInstance(FooDesc, { a: literal(3) }),
+    createInstance(FooDesc),
+
+    new InvertedStructType(new Set([FooDesc])),
+    new InvertedStructType(new Set([FooDesc, BOOL_TRUE.descriptor])),
+    new InvertedStructType(new Set([BOOL_TRUE.descriptor])),
+
+    StructType.instance,
 ];
 
 export const nonStructTypes = [...sets, ...numbers, ...strings] as const;
