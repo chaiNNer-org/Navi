@@ -282,7 +282,7 @@ const performIntersection = (items: readonly InternalIntersectionItem[]): Type =
 type BaseValueTypes<T extends ValueType> = T extends NumberPrimitive
     ? NumberPrimitive
     : T extends StringPrimitive
-    ? NumberPrimitive
+    ? StringPrimitive
     : T extends StructType
     ? StructType
     : never;
@@ -290,16 +290,11 @@ type BaseTypes<T extends Type> = T extends ValueType
     ? BaseValueTypes<T>
     : T extends UnionType<infer U>
     ? BaseValueTypes<U>
-    : T extends AnyType
-    ? AnyType | ValueType
     : never;
-type Closed<T extends ValueType | AnyType> = T extends AnyType
-    ? AnyType
-    : T extends ValueType
-    ? T | UnionType<T>
-    : never;
+type Closed<T extends ValueType> = T | UnionType<T>;
 type Intersection2<A extends Type, B extends Type> =
     | NeverType
+    | (A extends AnyType ? (B extends AnyType ? AnyType : never) : never)
     | Closed<BaseTypes<A> & BaseTypes<B>>;
 
 export function intersect(): AnyType;
