@@ -1,5 +1,4 @@
 import { UINT } from '../src/constants';
-import { createInstance } from '../src/create-instance';
 import {
     Expression,
     FieldAccessExpression,
@@ -7,6 +6,7 @@ import {
     UnionExpression,
 } from '../src/expression';
 import { BOOL, BOOL_FALSE, BOOL_TRUE } from '../src/struct-constants';
+import { createInstance } from '../src/struct-util';
 import {
     AnyType,
     Bounds,
