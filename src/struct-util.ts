@@ -1,4 +1,7 @@
+import { evaluate } from './evaluate';
+import { NamedExpression } from './expression';
 import { isSubsetOf } from './relation';
+import { Scope } from './scope';
 import { NonNeverType, StructDescriptor, StructInstanceType } from './types';
 import { isReadonlyArray } from './util';
 
@@ -98,4 +101,34 @@ export const createInstance = (
         return createInstanceFromFields(descriptor, fields);
     }
     return createInstanceFromFields(descriptor, toFields(descriptor, fields));
+};
+
+/**
+ * Returns the struct descriptor with the given name in the given scope. If no such struct exists,
+ * an error is thrown.
+ *
+ * Use `Scope.has` to check if a struct exists.
+ */
+export const getStructDescriptor = (scope: Scope, name: string): StructDescriptor => {
+    const { definition } = scope.get(name);
+    if (definition.type !== 'struct') {
+        throw new Error(
+            `Expected ${name} to be a struct definition, found a ${definition.type} definition.`
+        );
+    }
+
+    // the descriptor has already been added
+    if (definition.descriptor) {
+        return definition.descriptor;
+    }
+
+    // the descriptor has not been added yet,
+    // so we need to evaluate the default instance of the struct
+    const instance = evaluate(new NamedExpression(name), scope);
+    if (instance.underlying !== 'struct' || instance.type !== 'instance') {
+        throw new Error(
+            'Internal implementation error: Expected struct instance. This is a bug in the implementation.'
+        );
+    }
+    return instance.descriptor;
 };

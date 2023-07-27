@@ -4,7 +4,7 @@ export * from './expression';
 export * from './scope';
 export * from './source';
 export * from './types';
-export { createInstance } from './create-instance';
+export { createInstance, getStructDescriptor } from './struct-util';
 export { getReferences } from './expression-util';
 export { globalScope } from './global-scope';
 export {
