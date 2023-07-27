@@ -23,11 +23,11 @@ export class IntrinsicFunctionDefinition {
 
     readonly assert: Expression;
 
-    readonly fn: (...args: Type[]) => Type;
+    readonly fn: (scope: Scope, ...args: Type[]) => Type;
 
     constructor(
         name: string,
-        fn: (..._: Type[]) => Type,
+        fn: (scope: Scope, ..._: Type[]) => Type,
         parameters: readonly FunctionParameter[],
         varArgs?: FunctionParameter,
         assert?: Expression
@@ -40,34 +40,9 @@ export class IntrinsicFunctionDefinition {
         this.fn = fn;
     }
 
-    static unary<T extends Type>(
-        name: string,
-        fn: (a: T) => Type,
-        arg: FunctionParameter
-    ): IntrinsicFunctionDefinition {
-        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg]);
-    }
-
-    static binary<T1 extends Type, T2 extends Type>(
-        name: string,
-        fn: (a: T1, b: T2) => Type,
-        arg0: FunctionParameter,
-        arg1: FunctionParameter
-    ): IntrinsicFunctionDefinition {
-        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [arg0, arg1]);
-    }
-
-    static varArgs<T extends Type>(
-        name: string,
-        fn: (...args: T[]) => Type,
-        arg: FunctionParameter
-    ): IntrinsicFunctionDefinition {
-        return new IntrinsicFunctionDefinition(name, fn as (..._: Type[]) => Type, [], arg);
-    }
-
     static from(
         { name, parameters, varArgs, assert }: IntrinsicFunctionDeclaration,
-        fn: (...args: Type[]) => Type
+        fn: (scope: Scope, ...args: Type[]) => Type
     ): IntrinsicFunctionDefinition {
         return new IntrinsicFunctionDefinition(name, fn, parameters, varArgs, assert);
     }

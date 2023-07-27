@@ -31,6 +31,7 @@ import {
     stringSlice,
     toString,
 } from './builtin/string';
+import { makeScoped } from './builtin/wrap';
 import { VariableDefinition } from './expression';
 import { parseDefinitions } from './parse';
 import { IntrinsicFunctionDefinition, Scope, ScopeBuilder } from './scope';
@@ -49,53 +50,53 @@ const createGlobalScope = (): Scope => {
     builder.add(new VariableDefinition('string', StringType.instance));
     builder.add(new VariableDefinition('anyStruct', StructType.instance));
 
-    const intrinsic: Record<string, (...args: NeverType[]) => Type> = {
+    const intrinsic: Record<string, (scope: Scope, ...args: NeverType[]) => Type> = {
         // number
-        'number::neg': negate,
-        'number::add': add,
-        'number::sub': subtract,
-        'number::mul': multiply,
-        'number::div': divide,
-        'number::rec': reciprocal,
-        'number::mod': modulo,
+        'number::neg': makeScoped(negate),
+        'number::add': makeScoped(add),
+        'number::sub': makeScoped(subtract),
+        'number::mul': makeScoped(multiply),
+        'number::div': makeScoped(divide),
+        'number::rec': makeScoped(reciprocal),
+        'number::mod': makeScoped(modulo),
 
-        'number::lte': lessThanEqual,
-        'number::lt': lessThan,
+        'number::lte': makeScoped(lessThanEqual),
+        'number::lt': makeScoped(lessThan),
 
-        min: minimum,
-        max: maximum,
+        min: makeScoped(minimum),
+        max: makeScoped(maximum),
 
-        round: round,
-        floor: floor,
-        ceil: ceil,
+        round: makeScoped(round),
+        floor: makeScoped(floor),
+        ceil: makeScoped(ceil),
 
-        'number::sin': sin,
-        'number::cos': cos,
+        'number::sin': makeScoped(sin),
+        'number::cos': makeScoped(cos),
 
-        'number::exp': exp,
-        'number::log': log,
-        'number::pow': pow,
+        'number::exp': makeScoped(exp),
+        'number::log': makeScoped(log),
+        'number::pow': makeScoped(pow),
 
-        'number::parseInt': parseInt,
+        'number::parseInt': makeScoped(parseInt),
 
         // string
 
-        'string::len': stringLength,
-        'string::concat': concat,
-        'string::indexOf': indexOf,
-        'string::slice': stringSlice,
-        'string::repeat': repeat,
-        'string::replace': stringReplace,
+        'string::len': makeScoped(stringLength),
+        'string::concat': makeScoped(concat),
+        'string::indexOf': makeScoped(indexOf),
+        'string::slice': makeScoped(stringSlice),
+        'string::repeat': makeScoped(repeat),
+        'string::replace': makeScoped(stringReplace),
 
-        toString: toString,
+        toString: makeScoped(toString),
 
         // any
 
-        'any::eq': equal,
+        'any::eq': makeScoped(equal),
 
         // bool
-        'bool::and': and,
-        'bool::or': or,
+        'bool::and': makeScoped(and),
+        'bool::or': makeScoped(or),
     };
 
     const code = fs.readFileSync(__dirname + '/global.navi', 'utf-8');
@@ -110,7 +111,10 @@ const createGlobalScope = (): Scope => {
                     }
                     const fn = intrinsic[d.name];
                     builder.add(
-                        IntrinsicFunctionDefinition.from(d, fn as (...args: Type[]) => Type)
+                        IntrinsicFunctionDefinition.from(
+                            d,
+                            fn as (scope: Scope, ...args: Type[]) => Type
+                        )
                     );
                     break;
                 }

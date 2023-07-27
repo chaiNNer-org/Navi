@@ -532,7 +532,7 @@ const evaluateFunctionCall = (expression: FunctionCallExpression, scope: Scope):
         }
         return value;
     }
-    return definition.definition.fn(...args);
+    return definition.definition.fn(definitionScope, ...args);
 };
 
 const evaluateMatch = (expression: MatchExpression, scope: Scope): Type => {

@@ -1,8 +1,10 @@
+import { Scope } from '../scope';
 import {
     NeverType,
     NumberPrimitive,
     StringPrimitive,
     StructValueType,
+    Type,
     UnionType,
     ValueType,
 } from '../types';
@@ -10,6 +12,11 @@ import { union } from '../union';
 import { EMPTY_ARRAY, assertNever } from '../util';
 
 export type Arg<T extends ValueType> = T | UnionType<T> | NeverType;
+
+export type ScopedFn<F extends (...args: never[]) => Type> = (
+    scope: Scope,
+    ...args: Parameters<F>
+) => ReturnType<F>;
 
 export type UnaryFn<A extends ValueType, R extends ValueType = A> = (a: Arg<A>) => Arg<R>;
 export type BinaryFn<A extends ValueType, B extends ValueType = A, R extends ValueType = A & B> = (
@@ -59,6 +66,15 @@ export function wrapUnary<T extends ValueType, R extends ValueType = T>(
         return fn(a);
     };
 }
+export const wrapScopedUnary =
+    <T extends ValueType, R extends ValueType = T>(
+        fn: (scope: Scope, a: T) => Arg<R>
+    ): ScopedFn<UnaryFn<T, R>> =>
+    (scope, a) => {
+        if (a.type === 'never') return NeverType.instance;
+        if (a.type === 'union') return union(...a.items.map((x) => fn(scope, x))) as Arg<R>;
+        return fn(scope, a);
+    };
 
 export const wrapBinary = <
     A extends ValueType,
@@ -76,6 +92,27 @@ export const wrapBinary = <
         for (const aItem of aValues) {
             for (const bItem of bValues) {
                 items.push(fn(aItem, bItem));
+            }
+        }
+        return union(...items) as Arg<R>;
+    };
+};
+export const wrapScopedBinary = <
+    A extends ValueType,
+    B extends ValueType = A,
+    R extends ValueType = A & B
+>(
+    fn: (scope: Scope, a: A, b: B) => Arg<R>
+): ScopedFn<BinaryFn<A, B, R>> => {
+    return (scope, a, b) => {
+        if (a.type === 'never' || b.type === 'never') return NeverType.instance;
+
+        const aValues = toValues(a);
+        const bValues = toValues(b);
+        const items: Arg<R>[] = [];
+        for (const aItem of aValues) {
+            for (const bItem of bValues) {
+                items.push(fn(scope, aItem, bItem));
             }
         }
         return union(...items) as Arg<R>;
@@ -108,6 +145,32 @@ export const wrapTernary = <
         return union(...items) as Arg<R>;
     };
 };
+export const wrapScopedTernary = <
+    A extends ValueType,
+    B extends ValueType = A,
+    C extends ValueType = B,
+    R extends ValueType = A & B & C
+>(
+    fn: (scope: Scope, a: A, b: B, c: C) => Arg<R>
+): ScopedFn<TernaryFn<A, B, C, R>> => {
+    return (scope, a, b, c) => {
+        if (a.type === 'never' || b.type === 'never' || c.type === 'never')
+            return NeverType.instance;
+
+        const aValues = toValues(a);
+        const bValues = toValues(b);
+        const cValues = toValues(c);
+        const items: Arg<R>[] = [];
+        for (const aItem of aValues) {
+            for (const bItem of bValues) {
+                for (const cItem of cValues) {
+                    items.push(fn(scope, aItem, bItem, cItem));
+                }
+            }
+        }
+        return union(...items) as Arg<R>;
+    };
+};
 
 export const wrapQuaternary = <
     A extends ValueType,
@@ -132,6 +195,36 @@ export const wrapQuaternary = <
                 for (const cItem of cValues) {
                     for (const dItem of dValues) {
                         items.push(fn(aItem, bItem, cItem, dItem));
+                    }
+                }
+            }
+        }
+        return union(...items) as Arg<R>;
+    };
+};
+export const wrapScopedQuaternary = <
+    A extends ValueType,
+    B extends ValueType = A,
+    C extends ValueType = B,
+    D extends ValueType = C,
+    R extends ValueType = A & B & C & D
+>(
+    fn: (scope: Scope, a: A, b: B, c: C, d: D) => Arg<R>
+): ScopedFn<QuaternaryFn<A, B, C, D, R>> => {
+    return (scope, a, b, c, d) => {
+        if (a.type === 'never' || b.type === 'never' || c.type === 'never' || d.type === 'never')
+            return NeverType.instance;
+
+        const aValues = toValues(a);
+        const bValues = toValues(b);
+        const cValues = toValues(c);
+        const dValues = toValues(d);
+        const items: Arg<R>[] = [];
+        for (const aItem of aValues) {
+            for (const bItem of bValues) {
+                for (const cItem of cValues) {
+                    for (const dItem of dValues) {
+                        items.push(fn(scope, aItem, bItem, cItem, dItem));
                     }
                 }
             }
@@ -173,6 +266,20 @@ export function wrapReducerVarArgs<T extends ValueType>(
         return result;
     };
 }
+export const wrapScopedReducerVarArgs = <T extends ValueType>(
+    neutral: Arg<T>,
+    fn: (scope: Scope, a: T, b: T) => Arg<T>
+): ScopedFn<ReducerVarArgsFn<T>> => {
+    const binary = wrapScopedBinary(fn);
+    return (scope, ...args) => {
+        if (args.length === 0) return neutral;
+        let result = args[0];
+        for (let i = 1; i < args.length; i += 1) {
+            result = binary(scope, result, args[i]);
+        }
+        return result;
+    };
+};
 
 const getComplexity = (n: Arg<NumberPrimitive>): number => {
     switch (n.type) {
@@ -223,4 +330,10 @@ export const wrapAssociativeCommutativeReducerVarArgs = (
         }
         return result;
     };
+};
+
+export const makeScoped = <T extends Type[], R extends Type>(
+    fn: (...args: T) => R
+): ((scope: Scope, ...args: T) => R) => {
+    return (_, ...args) => fn(...args);
 };
