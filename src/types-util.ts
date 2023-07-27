@@ -28,7 +28,8 @@ export const groupByUnderlying = <T extends Type>(types: readonly T[]): Underlyi
     return groups;
 };
 
-export const isSameType = (a: Type, b: Type): boolean => a === b || a.getTypeId() === b.getTypeId();
+export const isSameType = (a: Type, b: Type): boolean =>
+    a === b || (a.type === b.type && a.getTypeId() === b.getTypeId());
 
 export function literal(number: number): NumericLiteralType;
 export function literal(string: string): StringLiteralType;
