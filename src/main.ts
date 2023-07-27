@@ -13,6 +13,7 @@ export {
     isNumericLiteral,
     isSameType,
     isStringLiteral,
+    isStructInstance,
     literal,
 } from './types-util';
 export { intersect, isDisjointWith } from './intersection';

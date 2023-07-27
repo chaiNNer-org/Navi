@@ -6,6 +6,7 @@ import {
     NonIntIntervalType,
     NumericLiteralType,
     StringLiteralType,
+    StructInstanceType,
     Type,
     WithUnderlying,
 } from './types';
@@ -73,10 +74,13 @@ export const nonIntInterval = (min: number, max: number) => {
 };
 
 export const isNumericLiteral = (type: Type): type is NumericLiteralType => {
-    return type.type === 'literal' && type.underlying === 'number';
+    return type.underlying === 'number' && type.type === 'literal';
 };
 export const isStringLiteral = (type: Type): type is StringLiteralType => {
-    return type.type === 'literal' && type.underlying === 'string';
+    return type.underlying === 'string' && type.type === 'literal';
+};
+export const isStructInstance = (type: Type): type is StructInstanceType => {
+    return type.underlying === 'struct' && type.type === 'instance';
 };
 
 export const newBounds = (minExclusive: boolean, maxExclusive: boolean): Bounds => {

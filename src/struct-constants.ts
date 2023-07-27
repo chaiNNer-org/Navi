@@ -1,9 +1,8 @@
 import { canonicalize } from './canonical';
 import { StructDescriptor, UnionType } from './types';
-import { EMPTY_ARRAY } from './util';
 
-const trueDescriptor = new StructDescriptor('true', EMPTY_ARRAY);
-const falseDescriptor = new StructDescriptor('false', EMPTY_ARRAY);
+const trueDescriptor = new StructDescriptor('true');
+const falseDescriptor = new StructDescriptor('false');
 
 export const BOOL_TRUE = trueDescriptor.default;
 export const BOOL_FALSE = falseDescriptor.default;

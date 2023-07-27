@@ -3,6 +3,7 @@ import { NamedExpression } from './expression';
 import { isSubsetOf } from './relation';
 import { Scope } from './scope';
 import { NonNeverType, StructDescriptor, StructInstanceType } from './types';
+import { isStructInstance } from './types-util';
 import { isReadonlyArray } from './util';
 
 const createInstanceFromFields = (
@@ -119,16 +120,28 @@ export const getStructDescriptor = (scope: Scope, name: string): StructDescripto
 
     // the descriptor has already been added
     if (definition.descriptor) {
+        if (definition.descriptor.name !== name) {
+            throw new Error(
+                `Expected struct descriptor to have name ${name}, found ${definition.descriptor.name}. This is a bug in the implementation.`
+            );
+        }
         return definition.descriptor;
     }
 
     // the descriptor has not been added yet,
     // so we need to evaluate the default instance of the struct
     const instance = evaluate(new NamedExpression(name), scope);
-    if (instance.underlying !== 'struct' || instance.type !== 'instance') {
+    if (!isStructInstance(instance)) {
         throw new Error(
             'Internal implementation error: Expected struct instance. This is a bug in the implementation.'
         );
     }
+
+    if (instance.descriptor.name !== name) {
+        throw new Error(
+            `Expected struct descriptor to have name ${name}, found ${instance.descriptor.name}. This is a bug in the implementation.`
+        );
+    }
+
     return instance.descriptor;
 };
