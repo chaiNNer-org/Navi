@@ -19,6 +19,7 @@
     "lint:fix": "eslint . --fix --ext \".js,.ts\"",
     "lint:ci": "eslint . --ext \".js,.ts\" --max-warnings 0",
     "test": "jest",
+    "test:update": "jest -u",
     "antlr4": "npx ts-node ./scripts/antlr4.ts"
   },
   "repository": {
