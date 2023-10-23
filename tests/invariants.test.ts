@@ -1,12 +1,14 @@
+import { ceil, floor, negate, round } from '../src/builtin/number';
 import { evaluate } from '../src/evaluate';
 import { IntersectionExpression, UnionExpression } from '../src/expression';
 import { intersect, isDisjointWith } from '../src/intersection';
+import { UnaryFn } from '../src/main';
 import { isSubsetOf } from '../src/relation';
-import { NeverType, NumberType, StringType, Type } from '../src/types';
+import { NeverType, NumberPrimitive, NumberType, StringType, Type, ValueType } from '../src/types';
 import { isSameType } from '../src/types-util';
 import { union } from '../src/union';
 import { without } from '../src/without';
-import { expressions, nonStructTypes, numbers, strings, types } from './data';
+import { expressions, nonStructTypes, numbers, orderedPairs, strings, types } from './data';
 import { assertSame, scope } from './scope';
 
 const fail = (reason: string) => {
@@ -309,4 +311,60 @@ describe('set invariants', () => {
             }
         }
     });
+});
+
+describe('function invariants', () => {
+    // All function must fulfill the following property:
+    //   A ⊆ B -> f(A) ⊆ f(B)
+
+    const testUnaryNumber = <T extends ValueType>(
+        name: string,
+        fn: UnaryFn<NumberPrimitive, T>
+    ) => {
+        test(name, () => {
+            const inputs = numbers;
+            for (const [a, b] of orderedPairs(inputs)) {
+                // obviously, c is a superset of both a and b
+                const c = union(a, b);
+
+                const fnA = fn(a);
+                const fnB = fn(b);
+                const fnC = fn(c);
+
+                if (!isSubsetOf(fnA, fnC)) {
+                    fail(
+                        [
+                            `Expected ${name}(a) to be a subset of ${name}(c):`,
+                            `a = ${a.toString()}`,
+                            `c = ${c.toString()}`,
+                            `${name}(a) = ${fnA.toString()}`,
+                            `${name}(c) = ${fnC.toString()}`,
+                        ].join('\n')
+                    );
+                }
+                if (!isSubsetOf(fnB, fnC)) {
+                    fail(
+                        [
+                            `Expected ${name}(b) to be a subset of ${name}(c):`,
+                            `b = ${b.toString()}`,
+                            `c = ${c.toString()}`,
+                            `${name}(b) = ${fnB.toString()}`,
+                            `${name}(c) = ${fnC.toString()}`,
+                        ].join('\n')
+                    );
+                }
+            }
+        });
+    };
+
+    // Unfortunately, we can only test exact functions. Functions that use approximation will always fail this test.
+    testUnaryNumber('negate', negate);
+    // testUnaryNumber('reciprocal', reciprocal);
+    testUnaryNumber('ceil', ceil);
+    testUnaryNumber('floor', floor);
+    testUnaryNumber('round', round);
+    // testUnaryNumber('sin', sin);
+    // testUnaryNumber('cos', cos);
+    // testUnaryNumber('exp', exp);
+    // testUnaryNumber('log', log);
 });
