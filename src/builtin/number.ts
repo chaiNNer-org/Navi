@@ -1,4 +1,4 @@
-import { INF, INT, NAN, NEG_INF, ONE, REAL, ZERO } from '../constants';
+import { INF, INT, NAN, NEG_INF, NEG_ONE, ONE, REAL, ZERO } from '../constants';
 import { intersect } from '../intersection';
 import { Range } from '../range';
 import {
@@ -22,7 +22,7 @@ import {
     nonIntInterval,
     openInterval,
 } from '../types-util';
-import { union } from '../union';
+import { union, unionValueTypes } from '../union';
 import { sameNumber } from '../util';
 import { without } from '../without';
 import {
@@ -756,36 +756,436 @@ export const log = wrapUnary<NumberPrimitive>((a) => {
     );
 });
 
-const powPositiveLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (a === 1) return ONE;
-    return exp(multiplyLiteral(literal(Math.log(a)), b));
+/**
+ * Required:
+ * - base != nan, inf, -inf, 0, 1
+ * - e is an int >= 2
+ */
+const powPositiveInteger = (base: NumberPrimitive, e: number): Arg<NumberPrimitive> => {
+    if (e < 2 || base.type === 'number') {
+        throw new Error('unreachable');
+    }
+    if (base.type === 'literal') {
+        return literal(fixRoundingError(Math.pow(base.value, e)));
+    }
+
+    if (e % 2 === 0) {
+        // e is even
+        // e.g. base^4
+        if (base.min <= 0 && 0 <= base.max) {
+            // the interval has 0 between its bounds
+            if (base.type === 'int-interval') {
+                // e.g. int(-20..10)^4 -> int(0..20^4)
+                const maxAbs = Math.max(Math.abs(base.min), Math.abs(base.max));
+                return intInterval(0, Math.pow(maxAbs, e));
+            } else {
+                // e.g. (-20!..10)^4 -> 0..!20^4
+                const aAbs = Math.abs(base.min);
+                const bAbs = Math.abs(base.max);
+
+                let maxAbs: number;
+                let maxAbsExclusive: boolean;
+                if (aAbs > bAbs) {
+                    maxAbs = aAbs;
+                    maxAbsExclusive = !base.has(base.min);
+                } else if (bAbs > aAbs) {
+                    maxAbs = bAbs;
+                    maxAbsExclusive = !base.has(base.max);
+                } else {
+                    maxAbs = aAbs;
+                    maxAbsExclusive = !(base.has(base.min) || base.has(base.max));
+                }
+                const zeroExclusive = !base.has(0);
+                return interval(0, Math.pow(maxAbs, e), newBounds(zeroExclusive, maxAbsExclusive));
+            }
+        } else {
+            // the interval does NOT have 0 between its bounds
+            if (base.type === 'int-interval') {
+                // e.g. int(4..10)^4 -> int(4^4..10^4)
+                const minAbs = Math.min(Math.abs(base.min), Math.abs(base.max));
+                const minAbsPow = Math.pow(minAbs, e);
+                if (minAbsPow === Infinity) {
+                    // even the minimum is too large to represent as an int
+                    return INF;
+                }
+                const maxAbs = Math.max(Math.abs(base.min), Math.abs(base.max));
+                return intInterval(minAbsPow, Math.pow(maxAbs, e));
+            } else {
+                // e.g. (4..10)^4 -> int(4^4..10^4)
+                if (base.max > 0) {
+                    const minAbsPow = Math.pow(base.min, e);
+                    if (minAbsPow === Infinity) {
+                        // even the minimum is too large to represent as an int
+                        return INF;
+                    }
+                    const maxAbsPow = Math.pow(base.max, e);
+                    if (minAbsPow === 0) {
+                        // even the minimum is too large to represent as an int
+                        return ZERO;
+                    }
+                    return interval(
+                        minAbsPow,
+                        maxAbsPow,
+                        newBounds(!base.has(base.min), !base.has(base.max))
+                    );
+                } else {
+                    const minAbsPow = Math.pow(-base.max, e);
+                    if (minAbsPow === Infinity) {
+                        // even the minimum is too large to represent as an int
+                        return INF;
+                    }
+                    const maxAbsPow = Math.pow(-base.min, e);
+                    if (minAbsPow === 0) {
+                        // even the minimum is too large to represent as an int
+                        return ZERO;
+                    }
+                    return interval(
+                        minAbsPow,
+                        maxAbsPow,
+                        newBounds(!base.has(base.max), !base.has(base.min))
+                    );
+                }
+            }
+        }
+    } else {
+        // e is odd
+        // e.g. base^5
+        if (base.type === 'int-interval') {
+            // e.g. int(-20..10)^5 -> int(-20^5..10^5)
+            const min = Math.pow(base.min, e);
+            const max = Math.pow(base.max, e);
+            if (min === max) {
+                // this means that both are either -inf or inf
+                return literal(min);
+            }
+            return intInterval(min, max);
+        } else {
+            // e.g. (-20!..10)^4 -> 0..!20^4
+            const min = Math.pow(base.min, e);
+            const max = Math.pow(base.max, e);
+            if (min === max) {
+                // this means that both are either -inf, inf, or 0
+                return literal(min);
+            }
+            return interval(min, max, newBounds(!base.has(base.min), !base.has(base.max)));
+        }
+    }
 };
-const powLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (Number.isNaN(a)) {
+const powPositiveLiteralBase = (base: number, e: NumberPrimitive): Arg<NumberPrimitive> => {
+    if (base === 1) return ONE;
+    return exp(multiplyLiteral(literal(Math.log(base)), e));
+};
+const powLiteral = (base: number, e: NumberPrimitive): Arg<NumberPrimitive> => {
+    if (Number.isNaN(base)) {
         return NAN;
     }
-    if (Number.isFinite(a)) {
-        if (a > 0) {
-            return powPositiveLiteral(a, b);
+    if (Number.isFinite(base)) {
+        if (base > 0) {
+            return powPositiveLiteralBase(base, e);
         }
-        if (a < 0) {
-            return negate(powPositiveLiteral(-a, b));
+        if (base < 0) {
+            return negate(powPositiveLiteralBase(-base, e));
         }
     }
     return NumberType.instance;
 };
+/**
+ * Requires:
+ * - base != nan, inf, -inf, 0, 1
+ * - exp > 0 && exp != nan, inf, 1
+ */
+const powNonTrivial = wrapBinary<NumberPrimitive>((base, e) => {
+    if (e.type === 'literal' && Number.isInteger(e.value)) {
+        return powPositiveInteger(base, e.value);
+    }
+    if (e.type === 'int-interval' && isSmallIntInterval(e)) {
+        return mapSmallIntInterval(e, (i) => powPositiveInteger(base, i));
+    }
+
+    return handleNumberLiterals(base, NumberType.instance, (i) => powLiteral(i, e));
+});
+const powToInfinity = wrapUnary<NumberPrimitive>((base: NumberPrimitive) => {
+    // inf ** inf => inf
+    // -inf ** inf => inf
+    // 0 ** inf => 0.0
+    // 0.0 ** inf => 0.0
+    // -0.0 ** inf => 0.0
+    // -1 ** inf => 1.0
+    // 2 ** inf => inf
+    // -2 ** inf => inf
+    // 0.5 ** inf => 0.0
+    // -0.5 ** inf => 0.0
+    if (base.type === 'number') {
+        return unionValueTypes(ZERO, ONE, INF);
+    }
+    if (base.type === 'literal') {
+        const value = Math.abs(base.value);
+        if (value === 1) return ONE;
+        if (value < 1) return ZERO;
+        return INF;
+    }
+
+    const parts: NumberPrimitive[] = [];
+    if (base.has(1) || base.has(-1)) {
+        parts.push(ONE);
+    }
+    const { min, max } = base;
+    if (min < -1 || max > 1) {
+        parts.push(INF);
+    }
+    if (
+        (max > 1 && min < 1) ||
+        (min < -1 && max > -1) ||
+        (-1 <= min && min < 1) ||
+        (-1 < max && max <= 1)
+    ) {
+        parts.push(ZERO);
+    }
+    return unionValueTypes(...parts);
+});
+const powToNegInfinity = wrapUnary<NumberPrimitive>((base: NumberPrimitive) => {
+    // inf ** -inf => 0.0
+    // -inf ** -inf => 0.0
+    // 0 ** -inf => inf
+    // 0.0 ** -inf => inf
+    // -0.0 ** -inf => inf
+    // -1 ** -inf => 1.0
+    // 2 ** -inf => 0.0
+    // -2 ** -inf => 0.0
+    // 0.5 ** -inf => inf
+    // -0.5 ** -inf => inf
+    if (base.type === 'number') {
+        return unionValueTypes(ZERO, ONE, INF);
+    }
+    if (base.type === 'literal') {
+        const value = Math.abs(base.value);
+        if (value === 1) return ONE;
+        if (value < 1) return INF;
+        return ZERO;
+    }
+
+    const parts: NumberPrimitive[] = [];
+    if (base.has(1) || base.has(-1)) {
+        parts.push(ONE);
+    }
+    const { min, max } = base;
+    if (min < -1 || max > 1) {
+        parts.push(ZERO);
+    }
+    if (
+        (max > 1 && min < 1) ||
+        (min < -1 && max > -1) ||
+        (-1 <= min && min < 1) ||
+        (-1 < max && max <= 1)
+    ) {
+        parts.push(INF);
+    }
+    return unionValueTypes(...parts);
+});
+const powOfInfinity = wrapUnary<NumberPrimitive>((e: NumberPrimitive) => {
+    // inf ** -1 => 0.0
+    // inf ** 2 => inf
+    // inf ** -2 => 0.0
+    // inf ** 2.5 => inf
+    // inf ** -2.5 => 0.0
+    // inf ** 3 => inf
+    // inf ** -3 => 0.0
+    // inf ** 0.5 => inf
+    // inf ** -0.5 => 0.0
+    if (e.type === 'number') {
+        return unionValueTypes(ZERO, INF);
+    }
+    if (e.type === 'literal') {
+        return e.value < 0 ? ZERO : INF;
+    }
+
+    const parts: NumberPrimitive[] = [];
+    if (e.min < 0) {
+        parts.push(ZERO);
+    }
+    if (e.max > 0) {
+        parts.push(INF);
+    }
+    return unionValueTypes(...parts);
+});
+const powOfNegInfinity = wrapUnary<NumberPrimitive>((e: NumberPrimitive) => {
+    // -inf ** -1 => 0.0
+    // -inf ** 2 => inf
+    // -inf ** -2 => 0.0
+    // -inf ** 2.5 => inf
+    // -inf ** -2.5 => 0.0
+    // -inf ** 3 => -inf
+    // -inf ** -3 => 0.0
+    // -inf ** 0.5 => inf
+    // -inf ** -0.5 => 0.0
+    if (e.type === 'number') {
+        return unionValueTypes(ZERO, INF, NEG_INF);
+    }
+    if (e.type === 'literal') {
+        if (e.value < 0) return ZERO;
+        // odd ints >=3 => -inf
+        if (Number.isInteger(e.value) && e.value >= 3 && e.value % 2 === 1) return NEG_INF;
+        return INF;
+    }
+
+    const parts: NumberPrimitive[] = [];
+    if (e.min < 0) {
+        parts.push(ZERO);
+    }
+    // odd ints >=3
+    if (e.has(3) || (e.min > 3 && e.has(Math.floor(e.min / 2) * 2 + 1))) {
+        parts.push(NEG_INF);
+    }
+    if (e.max > 0) {
+        parts.push(INF);
+    }
+    return unionValueTypes(...parts);
+});
+const powOfZero = wrapUnary<NumberPrimitive>((e: NumberPrimitive) => {
+    // 0 ** -1 => Error: 0.0 cannot be raised to a negative power
+    // 0 ** 2 => 0
+    // 0 ** -2 => Error: 0.0 cannot be raised to a negative power
+    // 0 ** 2.5 => 0.0
+    // 0 ** -2.5 => Error: 0.0 cannot be raised to a negative power
+    // 0 ** 3 => 0
+    // 0 ** -3 => Error: 0.0 cannot be raised to a negative power
+    // 0 ** 0.5 => 0.0
+    // 0 ** -0.5 => Error: 0.0 cannot be raised to a negative power
+    // We return never for errors
+    if (e.type === 'number') {
+        return ZERO;
+    }
+    if (e.type === 'literal') {
+        return e.value < 0 ? NeverType.instance : ZERO;
+    }
+    return e.max > 0 ? ZERO : NeverType.instance;
+});
 /**
  * Implements a power operation with the same behavior as Python's `**` operator.
  *
  * Note that the behavior of Python's `math.pow` and `**` are slightly different from each other and JS's `Math.pow`.
  * See https://github.com/joeyballentine/chaiNNer/issues/837 for more details.
  */
-export const pow = wrapBinary<NumberPrimitive>((a, b) => {
+export const pow: BinaryFn<NumberPrimitive, NumberPrimitive, NumberPrimitive> = (base, e) => {
     // Python's ** behavior is super strange and inconsistent because the operations is implemented by the operants
     // via operator overloading. So this will only implement the part that all implementations should agree on and
     // none of the edge cases.
-    return handleNumberLiterals(a, NumberType.instance, (i) => powLiteral(i, b));
-});
+
+    if (base.type === 'never' || e.type === 'never') return NeverType.instance;
+
+    const parts: Arg<NumberPrimitive>[] = [];
+
+    // get rid of all special bases for nan, inf, -inf, 0, 1, -1
+
+    // TODO: base: -1
+    // TODO: exp : -1
+
+    if (hasLiteral(e, 0)) {
+        // nan ** 0 => 1.0
+        // inf ** 0 => 1.0
+        // -inf ** 0 => 1.0
+        // 0 ** 0 => 1
+        // 0.0 ** 0 => 1.0
+        // -0.0 ** 0 => 1.0
+        // 1 ** 0 => 1
+        // -1 ** 0 => 1
+        // 2 ** 0 => 1
+        // -2 ** 0 => 1
+        // 0.5 ** 0 => 1.0
+        // -0.5 ** 0 => 1.0
+        parts.push(ONE);
+        e = without(e, ZERO) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(base, 1) && e.type !== 'never') {
+        // 1 ** nan => 1.0
+        // 1 ** inf => 1.0
+        // 1 ** -inf => 1.0
+        // 1 ** 1 => 1
+        // 1 ** -1 => 1.0
+        // 1 ** 2 => 1
+        // 1 ** -2 => 1.0
+        // 1 ** 0.5 => 1.0
+        // 1 ** -0.5 => 1.0
+        parts.push(ONE);
+        base = without(base, ONE) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(e, NaN) && base.type !== 'never') {
+        // nan ** nan => nan
+        // inf ** nan => nan
+        // -inf ** nan => nan
+        // 0 ** nan => nan
+        // 0.0 ** nan => nan
+        // -0.0 ** nan => nan
+        // -1 ** nan => nan
+        // 2 ** nan => nan
+        // -2 ** nan => nan
+        // 0.5 ** nan => nan
+        // -0.5 ** nan => nan
+        parts.push(NAN);
+        e = without(e, NAN) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(base, NaN) && e.type !== 'never') {
+        // nan ** nan => nan
+        // nan ** inf => nan
+        // nan ** -inf => nan
+        // nan ** 1 => nan
+        // nan ** -1 => nan
+        // nan ** 2 => nan
+        // nan ** -2 => nan
+        // nan ** 0.5 => nan
+        // nan ** -0.5 => nan
+        parts.push(NAN);
+        base = without(base, NAN) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(e, 1) && base.type !== 'never') {
+        // inf ** 1 => inf
+        // -inf ** 1 => -inf
+        // 0 ** 1 => 0
+        // 0.0 ** 1 => 0.0
+        // -0.0 ** 1 => -0.0
+        // -1 ** 1 => -1
+        // 2 ** 1 => 2
+        // -2 ** 1 => -2
+        // 0.5 ** 1 => 0.5
+        // -0.5 ** 1 => -0.5
+        parts.push(base);
+        e = without(e, ONE) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(e, Infinity) && base.type !== 'never') {
+        parts.push(powToInfinity(base));
+        e = without(e, INF) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(e, -Infinity) && base.type !== 'never') {
+        parts.push(powToNegInfinity(base));
+        e = without(e, NEG_INF) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(base, Infinity) && e.type !== 'never') {
+        parts.push(powOfInfinity(e));
+        base = without(base, INF) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(base, -Infinity) && e.type !== 'never') {
+        parts.push(powOfNegInfinity(e));
+        base = without(base, NEG_INF) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(base, 0) && e.type !== 'never') {
+        parts.push(powOfZero(e));
+        base = without(base, ZERO) as Arg<NumberPrimitive>;
+    }
+    if (hasLiteral(e, -1) && base.type !== 'never') {
+        parts.push(reciprocal(base));
+        e = without(e, NEG_ONE) as Arg<NumberPrimitive>;
+    }
+
+    // we'll use that a^-b = 1 / a^b
+    const ePos = intersect(e, new IntervalType(0, Infinity, Bounds.Exclusive));
+    const eNeg = intersect(e, new IntervalType(-Infinity, 0, Bounds.Exclusive));
+
+    return union(
+        powNonTrivial(base, ePos),
+        reciprocal(powNonTrivial(base, negate(eNeg))),
+        ...parts
+    );
+};
 
 const PARSE_INT_RANGE = union(INT, NAN);
 const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
