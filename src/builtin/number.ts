@@ -368,18 +368,43 @@ export const floor = wrapUnary((n: NumberPrimitive) => {
 export const ceil: UnaryFn<NumberPrimitive> = (a) => negate(floor(negate(a)));
 
 const moduleLiteral = (a: NumberPrimitive, b: NumericLiteralType): Arg<NumberPrimitive> => {
-    return subtract(a, multiply(b, floor(divide(a, b))));
+    let result = subtract(a, multiply(b, floor(divide(a, b))));
+
+    if (b.value > 0) {
+        // we know that the number is going to be between 0 and b.value (exclusive)
+        result = intersect(result, new IntervalType(0, b.value, Bounds.MaxExclusive));
+    }
+    if (b.value < 0) {
+        // we know that the number is going to be between -b.value (exclusive) and 0
+        result = intersect(result, new IntervalType(b.value, 0, Bounds.MinExclusive));
+    }
+
+    return result;
 };
 /**
- * Module, but the divisor is known to be non-zero
+ * Module, but `a` is does not contain `nan`, `inf`, `-inf` and `b` is does not contain `0`, `nan`, `inf`, `-inf`.
  */
-const moduloNonZero = wrapBinary<NumberPrimitive>((a, b) => {
+const moduloNonTrivial = wrapBinary<NumberPrimitive>((a, b) => {
     if (b.type === 'literal') return moduleLiteral(a, b);
     if (b.type === 'int-interval' && isSmallIntInterval(b)) {
         return mapSmallIntInterval(b, (i) => moduleLiteral(a, literal(i)));
     }
 
-    return subtract(a, multiply(b, floor(divide(a, b))));
+    let result = subtract(a, multiply(b, floor(divide(a, b))));
+
+    // narrow down the result based on the range of b. This follows the same logic as the narrowing in `moduleLiteral`.
+    if (b.type === 'interval' || b.type === 'int-interval' || b.type === 'non-int-interval') {
+        const { min, max } = b;
+        if (min >= 0 && max > 0) {
+            result = intersect(result, new IntervalType(0, max, Bounds.MaxExclusive));
+        } else if (min < 0 && max <= 0) {
+            result = intersect(result, new IntervalType(min, 0, Bounds.MinExclusive));
+        } else if (min < 0 && max > 0) {
+            result = intersect(result, new IntervalType(min, max, Bounds.Exclusive));
+        }
+    }
+
+    return result;
 });
 
 const hasLiteral = (a: Arg<NumberPrimitive>, n: number): boolean => {
@@ -443,7 +468,7 @@ export const modulo: BinaryFn<NumberPrimitive> = (a, b) => {
         }
     }
 
-    return union(moduloNonZero(a, b), ...trivial);
+    return union(moduloNonTrivial(a, b), ...trivial);
 };
 
 const minimumLiteral = (a: NumericLiteralType, b: NumberPrimitive): Arg<NumberPrimitive> => {
