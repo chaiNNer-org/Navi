@@ -1,4 +1,11 @@
-import { CanonicalTypes, StructDescriptor, Type, WithType, WithUnderlying } from './types';
+import {
+    CanonicalTypes,
+    NumberPrimitive,
+    StructDescriptor,
+    Type,
+    WithType,
+    WithUnderlying,
+} from './types';
 import { Comparator, binaryCompare, compareNumber, compareSequences } from './util';
 
 const numberOrder: readonly WithUnderlying<'number'>['type'][] = [
@@ -26,6 +33,19 @@ const underlyingOrder: readonly Type['underlying'][] = [
     'struct',
     'union',
 ];
+
+const getMin = (a: NumberPrimitive): number => {
+    switch (a.type) {
+        case 'literal':
+            return a.value;
+        case 'int-interval':
+        case 'non-int-interval':
+        case 'interval':
+            return a.min;
+        case 'number':
+            return Number.NEGATIVE_INFINITY;
+    }
+};
 
 type Comparators<T extends Type['underlying']> = {
     [key in WithUnderlying<T>['type']]: Comparator<WithType<key, WithUnderlying<T>>>;
@@ -74,6 +94,10 @@ const comparators: {
     never: () => 0,
     any: () => 0,
     number: (a, b) => {
+        const aMin = getMin(a);
+        const bMin = getMin(b);
+        const minCompare = compareNumber(aMin, bMin);
+        if (minCompare !== 0) return minCompare;
         if (a.type !== b.type) {
             return numberOrder.indexOf(a.type) - numberOrder.indexOf(b.type);
         }
