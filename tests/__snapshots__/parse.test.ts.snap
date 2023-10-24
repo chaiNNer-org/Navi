@@ -497,7 +497,7 @@ Error: min=NaN and max=NaN cannot be NaN
 SyntaxError: At 1:2: token recognition error at: '"'
 
 >>> "\\g"
-SyntaxError: Unexpected token g in JSON at position 2
+SyntaxError: Bad escaped character in JSON at position 2
 
 >>> "
     "
