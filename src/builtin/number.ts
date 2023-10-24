@@ -23,13 +23,13 @@ import {
     openInterval,
 } from '../types-util';
 import { union } from '../union';
-import { sameNumber } from '../util';
 import { without } from '../without';
 import {
     RangePoint,
     combineRangePoints,
     fixRoundingError,
     handleNumberLiterals,
+    hasLiteral,
     isSmallIntInterval,
     mapSmallIntInterval,
 } from './util';
@@ -407,16 +407,6 @@ const moduloNonTrivial = wrapBinary<NumberPrimitive>((a, b) => {
     return result;
 });
 
-const hasLiteral = (a: Arg<NumberPrimitive>, n: number): boolean => {
-    if (a.underlying === 'never') return false;
-    if (a.underlying === 'union') {
-        return a.items.some((item) => hasLiteral(item, n));
-    }
-
-    if (a.type === 'literal') return sameNumber(a.value, n);
-    if (a.type === 'number') return true;
-    return a.has(n);
-};
 const NON_FINITE = union(NAN, NEG_INF, INF);
 export const modulo: BinaryFn<NumberPrimitive> = (a, b) => {
     // any % 0 will always throw a ZeroDivisionError, so we can remove 0 from b
@@ -754,37 +744,6 @@ export const log = wrapUnary<NumberPrimitive>((a) => {
         fixRoundingError(Math.log(Math.max(0, a.min))),
         fixRoundingError(Math.log(a.max))
     );
-});
-
-const powPositiveLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (a === 1) return ONE;
-    return exp(multiplyLiteral(literal(Math.log(a)), b));
-};
-const powLiteral = (a: number, b: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (Number.isNaN(a)) {
-        return NAN;
-    }
-    if (Number.isFinite(a)) {
-        if (a > 0) {
-            return powPositiveLiteral(a, b);
-        }
-        if (a < 0) {
-            return negate(powPositiveLiteral(-a, b));
-        }
-    }
-    return NumberType.instance;
-};
-/**
- * Implements a power operation with the same behavior as Python's `**` operator.
- *
- * Note that the behavior of Python's `math.pow` and `**` are slightly different from each other and JS's `Math.pow`.
- * See https://github.com/joeyballentine/chaiNNer/issues/837 for more details.
- */
-export const pow = wrapBinary<NumberPrimitive>((a, b) => {
-    // Python's ** behavior is super strange and inconsistent because the operations is implemented by the operants
-    // via operator overloading. So this will only implement the part that all implementations should agree on and
-    // none of the edge cases.
-    return handleNumberLiterals(a, NumberType.instance, (i) => powLiteral(i, b));
 });
 
 const PARSE_INT_RANGE = union(INT, NAN);
