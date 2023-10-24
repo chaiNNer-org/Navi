@@ -1,6 +1,7 @@
 import { IntIntervalType, NumberPrimitive, ValueType } from '../types';
 import { interval, newBounds } from '../types-util';
 import { union } from '../union';
+import { sameNumber } from '../util';
 import { Arg } from './wrap';
 
 export const fixRoundingError = (n: number): number => {
@@ -78,4 +79,15 @@ export const combineRangePoints = (points: readonly RangePoint[]) => {
     }
 
     return interval(min, max, newBounds(minExclusive, maxExclusive));
+};
+
+export const hasLiteral = (a: Arg<NumberPrimitive>, n: number): boolean => {
+    if (a.underlying === 'never') return false;
+    if (a.underlying === 'union') {
+        return a.items.some((item) => hasLiteral(item, n));
+    }
+
+    if (a.type === 'literal') return sameNumber(a.value, n);
+    if (a.type === 'number') return true;
+    return a.has(n);
 };

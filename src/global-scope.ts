@@ -15,13 +15,13 @@ import {
     multiply,
     negate,
     parseInt,
-    pow,
     reciprocal,
     round,
     sin,
     subtract,
 } from './builtin/number';
 import { lessThan, lessThanEqual } from './builtin/number-compare';
+import { pow } from './builtin/number-pow';
 import {
     concat,
     indexOf,
