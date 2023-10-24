@@ -68,6 +68,15 @@ const powPositiveOddInteger = (
             return interval(min, max, Bounds.Inclusive);
         }
     } else if (base.type === 'int-interval') {
+        if (base.max - base.min <= 6 && eMin === eMax) {
+            // small improvement for small ranges
+            const points = [];
+            for (let i = base.min; i <= base.max; i += 1) {
+                points.push(literal(pow(i, eMin)));
+            }
+            return union(...points);
+        }
+
         // e.g. int(-20..10)^5 -> int(-20^5..10^5)
         const endPoints = [
             pow(base.min, eMin),
@@ -149,6 +158,15 @@ const powPositiveEvenInteger = (
             return interval(min, max, Bounds.Inclusive);
         }
     } else if (base.type === 'int-interval') {
+        if (base.max - base.min <= 6 && eMin === eMax) {
+            // small improvement for small ranges
+            const points = [];
+            for (let i = base.min; i <= base.max; i += 1) {
+                points.push(literal(pow(i, eMin)));
+            }
+            return union(...points);
+        }
+
         // e.g. int(5..10)^4 -> int(5^4..10^4)
         const points = [
             pow(base.min, eMin),
