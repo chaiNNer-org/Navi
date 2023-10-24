@@ -137,7 +137,7 @@ nonInt(1..2)
 >>> int(1..2)
 int(1..2)
 
->>>   int   (   1..2   )  
+>>>   int   (   1..2   )
 int(1..2)
 
 >>> int(1e2..2.5e4)
@@ -161,7 +161,7 @@ int(1..inf)
 >>> nonInt(1..2)
 nonInt(1..2)
 
->>>   nonInt   (   1..2   )  
+>>>   nonInt   (   1..2   )
 nonInt(1..2)
 
 >>> nonInt(1e2..2.5e4)
@@ -430,7 +430,7 @@ number::add(a, number::neg(number::neg(-100)))
 `;
 
 exports[`Invalid expression parsing 1`] = `
-">>> 
+">>>
 SyntaxError: At 1:0: mismatched input '<EOF>' expecting {'{', '(', 'def', 'let', 'match', 'if', 'struct', 'enum', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> öäü0
@@ -497,7 +497,7 @@ Error: min=NaN and max=NaN cannot be NaN
 SyntaxError: At 1:2: token recognition error at: '"'
 
 >>> "\\g"
-SyntaxError: Bad escaped character in JSON at position 2
+SyntaxError: Unexpected token g in JSON at position 2
 
 >>> "
     "
