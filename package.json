@@ -35,6 +35,9 @@
     "url": "https://github.com/chaiNNer-org/Navi/issues"
   },
   "homepage": "https://github.com/chaiNNer-org/Navi#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-replace": "^5.0.2",
