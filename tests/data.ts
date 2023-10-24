@@ -123,6 +123,7 @@ export const numbers: readonly (NumberPrimitive | UnionType<NumberPrimitive>)[] 
     new NonIntIntervalType(-Infinity, 0),
     new NonIntIntervalType(-Infinity, 1),
     new NonIntIntervalType(-Infinity, Infinity),
+    union(literal(1), literal(3), literal(4)),
 ];
 export const strings: readonly (StringPrimitive | UnionType<StringPrimitive>)[] = [
     StringType.instance,
