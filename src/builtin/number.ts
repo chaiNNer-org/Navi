@@ -756,154 +756,246 @@ export const log = wrapUnary<NumberPrimitive>((a) => {
     );
 });
 
+type NonTrivialBase = Exclude<NumberPrimitive, NumberType>;
+
 /**
  * Required:
  * - base != nan, inf, -inf, 0, 1
- * - e is an int >= 2
+ * - e is an odd int >= 3
  */
-const powPositiveInteger = (base: NumberPrimitive, e: number): Arg<NumberPrimitive> => {
-    if (e < 2 || base.type === 'number') {
+const powPositiveOddInteger = (
+    base: NonTrivialBase,
+    eMin: number,
+    eMax: number
+): Arg<NumberPrimitive> => {
+    if (eMin < 3) {
         throw new Error('unreachable');
     }
-    if (base.type === 'literal') {
-        return literal(fixRoundingError(Math.pow(base.value, e)));
-    }
 
-    if (e % 2 === 0) {
-        // e is even
-        // e.g. base^4
-        if (base.min <= 0 && 0 <= base.max) {
-            // the interval has 0 between its bounds
-            if (base.type === 'int-interval') {
-                // e.g. int(-20..10)^4 -> int(0..20^4)
-                const maxAbs = Math.max(Math.abs(base.min), Math.abs(base.max));
-                return intInterval(0, Math.pow(maxAbs, e));
-            } else {
-                // e.g. (-20!..10)^4 -> 0..!20^4
-                const aAbs = Math.abs(base.min);
-                const bAbs = Math.abs(base.max);
-
-                let maxAbs: number;
-                let maxAbsExclusive: boolean;
-                if (aAbs > bAbs) {
-                    maxAbs = aAbs;
-                    maxAbsExclusive = !base.has(base.min);
-                } else if (bAbs > aAbs) {
-                    maxAbs = bAbs;
-                    maxAbsExclusive = !base.has(base.max);
-                } else {
-                    maxAbs = aAbs;
-                    maxAbsExclusive = !(base.has(base.min) || base.has(base.max));
-                }
-                const zeroExclusive = !base.has(0);
-                return interval(0, Math.pow(maxAbs, e), newBounds(zeroExclusive, maxAbsExclusive));
-            }
-        } else {
-            // the interval does NOT have 0 between its bounds
-            if (base.type === 'int-interval') {
-                // e.g. int(4..10)^4 -> int(4^4..10^4)
-                const minAbs = Math.min(Math.abs(base.min), Math.abs(base.max));
-                const minAbsPow = Math.pow(minAbs, e);
-                if (minAbsPow === Infinity) {
-                    // even the minimum is too large to represent as an int
-                    return INF;
-                }
-                const maxAbs = Math.max(Math.abs(base.min), Math.abs(base.max));
-                return intInterval(minAbsPow, Math.pow(maxAbs, e));
-            } else {
-                // e.g. (4..10)^4 -> int(4^4..10^4)
-                if (base.max > 0) {
-                    const minAbsPow = Math.pow(base.min, e);
-                    if (minAbsPow === Infinity) {
-                        // even the minimum is too large to represent as an int
-                        return INF;
-                    }
-                    const maxAbsPow = Math.pow(base.max, e);
-                    if (minAbsPow === 0) {
-                        // even the minimum is too large to represent as an int
-                        return ZERO;
-                    }
-                    return interval(
-                        minAbsPow,
-                        maxAbsPow,
-                        newBounds(!base.has(base.min), !base.has(base.max))
-                    );
-                } else {
-                    const minAbsPow = Math.pow(-base.max, e);
-                    if (minAbsPow === Infinity) {
-                        // even the minimum is too large to represent as an int
-                        return INF;
-                    }
-                    const maxAbsPow = Math.pow(-base.min, e);
-                    if (minAbsPow === 0) {
-                        // even the minimum is too large to represent as an int
-                        return ZERO;
-                    }
-                    return interval(
-                        minAbsPow,
-                        maxAbsPow,
-                        newBounds(!base.has(base.max), !base.has(base.min))
-                    );
-                }
-            }
+    // e.g. base^5
+    const pow = (x: number, e: number): number => {
+        if (x === 0) return 0;
+        if (e === Infinity) {
+            if (x === 1 || x === -1) return x;
+            if (Math.abs(x) < 1) return 0;
+            return x < 0 ? -Infinity : Infinity;
         }
-    } else {
-        // e is odd
-        // e.g. base^5
-        if (base.type === 'int-interval') {
-            // e.g. int(-20..10)^5 -> int(-20^5..10^5)
-            const min = Math.pow(base.min, e);
-            const max = Math.pow(base.max, e);
-            if (min === max) {
-                // this means that both are either -inf or inf
-                return literal(min);
+        return fixRoundingError(Math.pow(x, e));
+    };
+
+    if (base.type === 'literal') {
+        const { value } = base;
+
+        if (eMax - eMin <= 6) {
+            // small improvement for small ranges
+            const points = [];
+            for (let i = eMin; i <= eMax; i += 2) {
+                points.push(literal(pow(value, i)));
             }
+            return union(...points);
+        }
+
+        let min = pow(value, eMin);
+        let max = pow(value, eMax);
+        if (min > max) {
+            [min, max] = [max, min];
+        }
+
+        if (min === max) {
+            return literal(min);
+        } else if (Number.isInteger(value)) {
             return intInterval(min, max);
         } else {
-            // e.g. (-20!..10)^4 -> 0..!20^4
-            const min = Math.pow(base.min, e);
-            const max = Math.pow(base.max, e);
-            if (min === max) {
-                // this means that both are either -inf, inf, or 0
-                return literal(min);
+            return interval(min, max, Bounds.Inclusive);
+        }
+    } else if (base.type === 'int-interval') {
+        // e.g. int(-20..10)^5 -> int(-20^5..10^5)
+        const endPoints = [
+            pow(base.min, eMin),
+            pow(base.max, eMin),
+            pow(base.min, eMax),
+            pow(base.max, eMax),
+        ];
+        const min = Math.min(...endPoints);
+        const max = Math.max(...endPoints);
+        if (min === max) {
+            return literal(min);
+        }
+        return intInterval(min, max);
+    } else {
+        // e.g. (-20!..10)^4 -> 0..!20^4
+        const getRangePoint = (x: number, e: number, exclusive: boolean): RangePoint => {
+            const value = pow(x, e);
+            if (Number.isFinite(x) && !Number.isFinite(value)) {
+                return { value: value, exclusive: false };
             }
-            return interval(min, max, newBounds(!base.has(base.min), !base.has(base.max)));
-        }
+            return { value, exclusive };
+        };
+        return combineRangePoints([
+            getRangePoint(base.min, eMin, !base.has(base.min)),
+            getRangePoint(base.max, eMin, !base.has(base.max)),
+            getRangePoint(base.min, eMax, !base.has(base.min)),
+            getRangePoint(base.max, eMax, !base.has(base.max)),
+        ]);
     }
 };
-const powPositiveLiteralBase = (base: number, e: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (base === 1) return ONE;
-    return exp(multiplyLiteral(literal(Math.log(base)), e));
+/**
+ * Required:
+ * - base > 0 && base != nan, inf, 1
+ * - e is an even int >= 2
+ */
+const powPositiveEvenInteger = (
+    base: NonTrivialBase,
+    eMin: number,
+    eMax: number
+): Arg<NumberPrimitive> => {
+    if (eMin < 2) {
+        throw new Error('unreachable');
+    }
+
+    // e.g. base^4
+    const pow = (x: number, e: number): number => {
+        if (x === 0) return 0;
+        if (e === Infinity) {
+            if (x === 1) return x;
+            if (x < 1) return 0;
+            return Infinity;
+        }
+        return fixRoundingError(Math.pow(x, e));
+    };
+
+    if (base.type === 'literal') {
+        const { value } = base;
+
+        if (eMax - eMin <= 6) {
+            // small improvement for small ranges
+            const points = [];
+            for (let i = eMin; i <= eMax; i += 2) {
+                points.push(literal(pow(value, i)));
+            }
+            return union(...points);
+        }
+
+        let min = pow(value, eMin);
+        let max = pow(value, eMax);
+        if (min > max) {
+            [min, max] = [max, min];
+        }
+
+        if (min === max) {
+            return literal(min);
+        } else if (Number.isInteger(value)) {
+            return intInterval(min, max);
+        } else {
+            return interval(min, max, Bounds.Inclusive);
+        }
+    } else if (base.type === 'int-interval') {
+        // e.g. int(5..10)^4 -> int(5^4..10^4)
+        const points = [
+            pow(base.min, eMin),
+            pow(base.max, eMin),
+            pow(base.min, eMax),
+            pow(base.max, eMax),
+        ];
+        const min = Math.min(...points);
+        const max = Math.max(...points);
+        if (min === max) {
+            return literal(min);
+        }
+        return intInterval(min, max);
+    } else {
+        // e.g. (5!..10)^4 -> 5^4!..20^4
+        const getRangePoint = (x: number, e: number, exclusive: boolean): RangePoint => {
+            const value = pow(x, e);
+            if (Number.isFinite(x) && !Number.isFinite(value)) {
+                return { value: value, exclusive: false };
+            }
+            return { value, exclusive };
+        };
+        return combineRangePoints([
+            getRangePoint(base.min, eMin, !base.has(base.min)),
+            getRangePoint(base.max, eMin, !base.has(base.max)),
+            getRangePoint(base.min, eMax, !base.has(base.min)),
+            getRangePoint(base.max, eMax, !base.has(base.max)),
+        ]);
+    }
 };
-const powLiteral = (base: number, e: NumberPrimitive): Arg<NumberPrimitive> => {
-    if (Number.isNaN(base)) {
-        return NAN;
+const simpleAbs = (a: NonTrivialBase): NonTrivialBase => {
+    const result = maximum(a, negate(a));
+    if (result.underlying === 'union' || result.type === 'never' || result.type === 'number') {
+        throw new Error('unreachable');
     }
-    if (Number.isFinite(base)) {
-        if (base > 0) {
-            return powPositiveLiteralBase(base, e);
+    return result;
+};
+/**
+ * Required:
+ * - base != nan, inf, -inf, 0, 1
+ * - exp is an int >= 2
+ */
+const powPositiveInteger = wrapBinary(
+    (base: NumberPrimitive, e: NumberPrimitive): Arg<NumberPrimitive> => {
+        if (
+            base.type === 'number' ||
+            e.type === 'interval' ||
+            e.type === 'non-int-interval' ||
+            e.type === 'number'
+        ) {
+            throw new Error('Invalid input values');
         }
-        if (base < 0) {
-            return negate(powPositiveLiteralBase(-base, e));
+
+        if (e.type === 'literal') {
+            if (e.value < 2 || !Number.isInteger(e.value)) {
+                throw new Error('Invalid input values');
+            }
+            if (e.value % 2 === 0) {
+                return powPositiveEvenInteger(simpleAbs(base), e.value, e.value);
+            } else {
+                return powPositiveOddInteger(base, e.value, e.value);
+            }
+        } else {
+            // e.type === "int-interval"
+            let evenMin = e.min;
+            let evenMax = e.max;
+            let oddMin = e.min;
+            let oddMax = e.max;
+
+            // since int intervals are guaranteed to contain at least 2 integers, this is correct
+            if (evenMin % 2 !== 0) evenMin += 1;
+            if (evenMax % 2 !== 0) evenMax -= 1;
+            if (oddMin % 2 === 0) oddMin += 1;
+            if (oddMax % 2 === 0) oddMax -= 1;
+
+            return union(
+                powPositiveEvenInteger(simpleAbs(base), evenMin, evenMax),
+                powPositiveOddInteger(base, oddMin, oddMax)
+            );
         }
     }
-    return NumberType.instance;
+);
+/**
+ * Requires:
+ * - base != nan, inf, -inf, 0, 1
+ * - exp is not an int && exp > 0 && exp != nan, inf
+ */
+const powPosNonInteger: BinaryFn<NumberPrimitive, NumberPrimitive, NumberPrimitive> = (base, e) => {
+    // Negative bases raised to non-integer exponents will always result in complex results. We don't support complex
+    // numbers, so we will return never.
+    base = intersect(base, new IntervalType(0, Infinity, Bounds.Exclusive));
+
+    return exp(multiply(log(base), e));
 };
 /**
  * Requires:
  * - base != nan, inf, -inf, 0, 1
  * - exp > 0 && exp != nan, inf, 1
  */
-const powNonTrivial = wrapBinary<NumberPrimitive>((base, e) => {
-    if (e.type === 'literal' && Number.isInteger(e.value)) {
-        return powPositiveInteger(base, e.value);
-    }
-    if (e.type === 'int-interval' && isSmallIntInterval(e)) {
-        return mapSmallIntInterval(e, (i) => powPositiveInteger(base, i));
-    }
+const powNonTrivial: BinaryFn<NumberPrimitive, NumberPrimitive, NumberPrimitive> = (base, e) => {
+    // we have to differentiate between integer and non-integer exponents
+    const eInt = intersect(e, INT);
+    const eNonInt = intersect(e, new NonIntIntervalType(0, Infinity));
 
-    return handleNumberLiterals(base, NumberType.instance, (i) => powLiteral(i, e));
-});
+    return union(powPositiveInteger(base, eInt), powPosNonInteger(base, eNonInt));
+};
 const powToInfinity = wrapUnary<NumberPrimitive>((base: NumberPrimitive) => {
     // inf ** inf => inf
     // -inf ** inf => inf
@@ -1076,9 +1168,6 @@ export const pow: BinaryFn<NumberPrimitive, NumberPrimitive, NumberPrimitive> = 
     const parts: Arg<NumberPrimitive>[] = [];
 
     // get rid of all special bases for nan, inf, -inf, 0, 1, -1
-
-    // TODO: base: -1
-    // TODO: exp : -1
 
     if (hasLiteral(e, 0)) {
         // nan ** 0 => 1.0
