@@ -353,9 +353,43 @@ describe('Match', () => {
         ]);
 
     test('no arms', () => {
+        // no arms are only valid if the match expression is never
+        assertSame(new MatchExpression(NeverType.instance, []), NeverType.instance);
+
         for (const type of types) {
-            assertSame(new MatchExpression(type, []), NeverType.instance);
+            if (type.type !== 'never') {
+                expect(() => evaluate(new MatchExpression(type, []), scope)).toThrow();
+            }
         }
+    });
+    test('never', () => {
+        // match on never is always never
+        assertSame(
+            new MatchExpression(NeverType.instance, [
+                new MatchArm(AnyType.instance, undefined, AnyType.instance),
+            ]),
+            NeverType.instance
+        );
+    });
+    test('exhaustive', () => {
+        const lines: string[] = [];
+
+        for (const a of types) {
+            for (const b of types) {
+                const e = new MatchExpression(a, [new MatchArm(b, undefined, literal(1))]);
+
+                let result;
+                try {
+                    result = evaluate(e, scope).toString();
+                } catch (error) {
+                    result = String(error);
+                }
+
+                lines.push(`${e.toString()}\n => ${result}`);
+            }
+        }
+
+        expect(lines.join('\n\n')).toMatchSnapshot();
     });
     test('default', () => {
         const value = new StringLiteralType('hey yo');
