@@ -27,20 +27,6 @@ import {
 } from './data';
 import { assertSame, scope } from './scope';
 
-const isIncompatibleUnderlyingType = (a: Type, b: Type): boolean => {
-    if (a.underlying === 'any' || a.underlying === 'never') return false;
-    if (b.underlying === 'any' || b.underlying === 'never') return false;
-
-    const getApproximateUnderlying = (t: Type): Type['underlying'] => {
-        if (t.underlying !== 'union') return t.underlying;
-        const u = [...new Set(t.items.map((i) => i.underlying))];
-        if (u.length === 1) return u[0];
-        return 'any';
-    };
-
-    return getApproximateUnderlying(a) !== getApproximateUnderlying(b);
-};
-
 test('Expression evaluation', () => {
     const actual = [...expressions, ...potentiallyInvalidExpressions]
         .map((e) => {
@@ -57,8 +43,22 @@ test('Expression evaluation', () => {
 });
 
 describe('without', () => {
+    const isIncompatibleUnderlyingType = (a: Type, b: Type): boolean => {
+        if (a.underlying === 'any' || b.underlying === 'any') return false;
+        if (a.underlying === 'never' || b.underlying === 'never') return false;
+
+        const getApproximateUnderlying = (t: Type): Type['underlying'] => {
+            if (t.underlying !== 'union') return t.underlying;
+            const u = [...new Set(t.items.map((i) => i.underlying))];
+            if (u.length === 1) return u[0];
+            return 'any';
+        };
+
+        return getApproximateUnderlying(a) !== getApproximateUnderlying(b);
+    };
+
     test('evaluation', () => {
-        const actual = orderedPairs(types.filter((t) => t.type !== 'any' && t.type !== 'never'))
+        const actual = orderedPairs(types.filter((t) => t.type !== 'never'))
             .filter(([a, b]) => !isIncompatibleUnderlyingType(a, b))
             .map(([a, b]) => {
                 let result;

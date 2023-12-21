@@ -11,10 +11,13 @@ import {
     NeverType,
     NonIntIntervalType,
     NumberPrimitive,
+    NumberType,
     NumericLiteralType,
     StringLiteralType,
     StringPrimitive,
+    StringType,
     StructInstanceType,
+    StructType,
     StructValueType,
     Type,
     UnionType,
@@ -323,6 +326,17 @@ const withoutValue = (left: WithoutLhs<ValueType>, right: ValueType): WithoutRes
     return result;
 };
 
+const complementType = (t: Type): Type => {
+    if (t.type === 'never') return AnyType.instance;
+    if (t.type === 'any') return NeverType.instance;
+
+    // any = number | string | anyStruct
+    const anyBase = [NumberType.instance, StringType.instance, StructType.instance] as const;
+    const baseWithout = anyBase.map((b) => without(b, t));
+
+    return union(...baseWithout);
+};
+
 /**
  * Returns the **approximate** result of `left \ right` (set minus/set difference).
  *
@@ -335,7 +349,7 @@ export const without = (left: Type, right: Type): Type => {
     if (right.type === 'never') return left;
     if (right.type === 'any') return NeverType.instance;
     if (left.type === 'never') return NeverType.instance;
-    if (left.type === 'any') return AnyType.instance;
+    if (left.type === 'any') return complementType(right);
 
     if (right.underlying !== 'union') {
         return withoutValue(left, right);
