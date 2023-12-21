@@ -531,13 +531,22 @@ class AstConverter {
         }
         if (context instanceof NaviParser.IfExpressionContext) {
             const condition = this.toExpression(getRequired(context, 'expression'));
-            const [trueBranch, falseBranch] = getMultiple(context, 'scopeExpression').map(
-                this.toExpression
-            );
-            return new MatchExpression(condition, [
-                new MatchArm(BOOL_TRUE, undefined, trueBranch),
-                new MatchArm(BOOL_FALSE, undefined, falseBranch),
-            ]);
+            const elseIf = getOptional(context, 'ifExpression');
+            if (elseIf) {
+                const [trueBranch] = getMultiple(context, 'scopeExpression').map(this.toExpression);
+                return new MatchExpression(condition, [
+                    new MatchArm(BOOL_TRUE, undefined, trueBranch),
+                    new MatchArm(BOOL_FALSE, undefined, this.toExpression(elseIf)),
+                ]);
+            } else {
+                const [trueBranch, falseBranch] = getMultiple(context, 'scopeExpression').map(
+                    this.toExpression
+                );
+                return new MatchExpression(condition, [
+                    new MatchArm(BOOL_TRUE, undefined, trueBranch),
+                    new MatchArm(BOOL_FALSE, undefined, falseBranch),
+                ]);
+            }
         }
 
         return assertNever(context);

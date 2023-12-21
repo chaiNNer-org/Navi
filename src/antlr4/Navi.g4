@@ -54,7 +54,10 @@ named: name;
 structExpression: name fields;
 scopeExpression: '{' definition* expression '}';
 ifExpression:
-	If expression scopeExpression Else scopeExpression;
+	If expression scopeExpression Else (
+		scopeExpression
+		| ifExpression
+	);
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 

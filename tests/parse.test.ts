@@ -125,6 +125,7 @@ const expressionSnippets: string[] = [
     // if
     String.raw`if a { 1 } else { 2 }`,
     String.raw`if (a) { 1 } else { 2 }`,
+    String.raw`if a { 1 } else if b { 2 } else { 3}`,
 
     // field access
     String.raw`a.b.c.d.e.f`,
@@ -251,6 +252,7 @@ const invalidExpressionSnippets: string[] = [
     String.raw`if a`,
     String.raw`if a 1 else 2`,
     String.raw`if a { 2 }`,
+    String.raw`if a { 2 } else if b { 3 }`,
 
     // field access
     String.raw`a.match`,

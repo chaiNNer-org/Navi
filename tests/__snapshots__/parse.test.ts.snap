@@ -302,6 +302,9 @@ match a { true => 1, false => 2 }
 >>> if (a) { 1 } else { 2 }
 match a { true => 1, false => 2 }
 
+>>> if a { 1 } else if b { 2 } else { 3}
+match a { true => 1, false => match b { true => 2, false => 3 } }
+
 >>> a.b.c.d.e.f
 a.b.c.d.e.f
 
@@ -560,6 +563,9 @@ SyntaxError: At 1:5: missing '{' at '1'
 
 >>> if a { 2 }
 SyntaxError: At 1:10: mismatched input '<EOF>' expecting 'else'
+
+>>> if a { 2 } else if b { 3 }
+SyntaxError: At 1:26: mismatched input '<EOF>' expecting 'else'
 
 >>> a.match
 SyntaxError: At 1:2: mismatched input 'match' expecting Identifier
