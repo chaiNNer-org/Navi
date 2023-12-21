@@ -4,7 +4,15 @@ import { IntersectionExpression, UnionExpression } from '../src/expression';
 import { intersect, isDisjointWith } from '../src/intersection';
 import { UnaryFn } from '../src/main';
 import { isSubsetOf } from '../src/relation';
-import { NeverType, NumberPrimitive, NumberType, StringType, Type, ValueType } from '../src/types';
+import {
+    AnyType,
+    NeverType,
+    NumberPrimitive,
+    NumberType,
+    StringType,
+    Type,
+    ValueType,
+} from '../src/types';
 import { isSameType } from '../src/types-util';
 import { union } from '../src/union';
 import { without } from '../src/without';
@@ -308,6 +316,27 @@ describe('set invariants', () => {
                     const prefix = `a = ${a.toString()}\nb = ${b.toString()}\n((a | b) \\ a) \\ b = `;
                     expect(prefix + actual.toString()).toBe(`${prefix}never`);
                 }
+            }
+        }
+    });
+    test('(any \\ A) | A = any', () => {
+        for (const a of nonStructTypes) {
+            const actual = union(without(AnyType.instance, a), a);
+            if (actual.type !== 'any') {
+                const prefix = `a = ${a.toString()}\n(any \\ a) | a = `;
+                expect(prefix + actual.toString()).toBe(`${prefix}any`);
+            }
+        }
+    });
+    test('any \\ A != any if A != ∅', () => {
+        for (const a of nonStructTypes) {
+            if (a.type === 'never') {
+                continue;
+            }
+            const actual = without(AnyType.instance, a);
+            if (isSameType(actual, AnyType.instance)) {
+                const prefix = `a = ${a.toString()}\nany \\ a = `;
+                expect(prefix + actual.toString()).toBe(`${prefix} not any`);
             }
         }
     });
