@@ -145,6 +145,13 @@ export type ErrorDetails =
           value: Type;
           assert: Type;
           message: string;
+      }
+    | {
+          type: 'Non-exhaustive match';
+          expression: MatchExpression;
+          of: Type;
+          remaining: Type;
+          message: string;
       };
 
 export class EvaluationError extends Error {
@@ -538,6 +545,7 @@ const evaluateFunctionCall = (expression: FunctionCallExpression, scope: Scope):
 const evaluateMatch = (expression: MatchExpression, scope: Scope): Type => {
     let type = evaluate(expression.of, scope);
     if (type.type === 'never') return NeverType.instance;
+    const initialOf = type;
 
     const withBinding = (arm: MatchArm, armType: Type): Scope => {
         if (arm.binding === undefined) return scope;
@@ -555,6 +563,16 @@ const evaluateMatch = (expression: MatchExpression, scope: Scope): Type => {
             matchTypes.push(evaluate(arm.to, withBinding(arm, t)));
             type = without(type, armType);
         }
+    }
+
+    if (type.type !== 'never') {
+        throw new EvaluationError({
+            type: 'Non-exhaustive match',
+            expression,
+            of: initialOf,
+            remaining: type,
+            message: `The match expression does not cover all possible cases. \`${type.toString()}\` is not matched by any arm. Either adjust the patterns of match arms or add a \`_\` arm to match all remaining types.`,
+        });
     }
 
     return union(...matchTypes);
