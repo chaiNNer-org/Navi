@@ -257,6 +257,21 @@ foo::bar::baz
 >>> foo::bar::baz {}
 foo::bar::baz {}
 
+>>> Image { ...never }
+Image { ...never }
+
+>>> Image { ...i, height: uint, channels: int(1..inf) }
+Image { ...i, height: uint, channels: int(1..inf) }
+
+>>> Image { .....3 }
+Image { ...-inf..3 }
+
+>>> Image { ...i , }
+Image { ...i }
+
+>>> Image { ...i, ...j }
+Image { ...i, ...j }
+
 >>> match never {}
 match never {  }
 
@@ -545,6 +560,12 @@ SyntaxError: At 1:4: mismatched input '{' expecting Identifier
 
 >>> foo { as: as }
 SyntaxError: At 1:4: mismatched input '{' expecting <EOF>
+
+>>> Image { , height: uint }
+SyntaxError: At 1:6: mismatched input '{' expecting <EOF>
+
+>>> Image { height: uint, ...i,}
+SyntaxError: At 1:22: no viable alternative at input ',...'
 
 >>> match a
 SyntaxError: At 1:7: mismatched input '<EOF>' expecting '{'

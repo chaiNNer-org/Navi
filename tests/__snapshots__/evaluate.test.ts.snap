@@ -32167,7 +32167,21 @@ anyStruct.a => Error: Invalid field access: \`anyStruct\` is not guaranteed to h
 (notStructs(Foo) & anyStruct).a => Error: Invalid field access: \`notStructs(Foo)\` is not guaranteed to have a field \`a\`.
 (notStructs(true | Foo) & notStructs(true)).a => Error: Invalid field access: \`notStructs(true | Foo)\` is not guaranteed to have a field \`a\`.
 (notStructs(true | Foo) & anyStruct).a => Error: Invalid field access: \`notStructs(true | Foo)\` is not guaranteed to have a field \`a\`.
-(notStructs(true) & anyStruct).a => Error: Invalid field access: \`notStructs(true)\` is not guaranteed to have a field \`a\`."
+(notStructs(true) & anyStruct).a => Error: Invalid field access: \`notStructs(true)\` is not guaranteed to have a field \`a\`.
+{ let foo: int = 4; foo } => 4
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; x.a } => 3
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { b: 0 } } => Foo { a: int(-inf..inf), b: 0 }
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...x } } => Foo { a: 3, b: 4 }
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...x, b: 0 } } => Foo { a: 3, b: 0 }
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...4, b: 0 } } => Error: Invalid struct spread: The number types cannot be used as a spread value.
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...null, b: 0 } } => Error: Invalid struct spread: Fields of null do not overlap with the fields of Foo: a, b.
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...Foo, b: 0 } } => Foo { a: int(-inf..inf), b: 0 }
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...never, b: 0 } } => never
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...any, b: 0 } } => Error: Invalid struct spread: The \`any\` type has no fields cannot be used as a spread value.
+{ struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...anyStruct, b: 0 } } => Error: Invalid struct spread: The anyStruct type is not guaranteed to have any fields and cannot be used as a spread value.
+{ struct Foo { a: int, b: uint } struct Bar { a: 1..4 } let x = Foo { a: 3, b: 4 }; Foo { ...Bar, b: 0 } } => Error: Invalid struct spread: The type 1..4 of the a field is not compatible with its type definition int(-inf..inf). The result of accessing the field a for spread type Bar { a: 1..4 } is incompatible with the field of struct type Foo.
+{ struct Foo { a: int, b: uint } struct Bar { a: uint } Foo { ...Foo { a: 1, b: 2 }, ...Bar { a: 5 } } } => Foo { a: 5, b: 2 }
+{ struct Foo { a: int, b: uint } struct Bar { a: uint } Foo { ...Bar { a: 5 }, ...Foo { a: 1, b: 2 } } } => Foo { a: 1, b: 2 }"
 `;
 
 exports[`Match evaluate 1`] = `

@@ -51,7 +51,7 @@ matchExpression:
 matchArm: (Discard | expression) (As Identifier)? '=>' expression;
 functionCall: name '(' args ')';
 named: name;
-structExpression: name fields;
+structExpression: name fieldsSpread;
 scopeExpression: '{' definition* expression '}';
 ifExpression:
 	If expression scopeExpression Else (
@@ -87,6 +87,12 @@ expression: comparisonExpression;
 // misc
 args: (expression (',' expression)* ','?)?;
 fields: '{' (field (',' field)* ','?)? '}';
+fieldsSpread:
+	'{' (
+		spread (',' spread)* (',' (field (',' field)* ','?)?)?
+		| (field (',' field)* ','?)?
+	) '}';
+spread: OpSpread expression;
 field: Identifier assert;
 parameters: '(' (parameter (',' parameter)* ','?)? ')';
 varArgParameters:

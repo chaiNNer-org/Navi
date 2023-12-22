@@ -28,7 +28,25 @@ import {
 import { assertSame, scope } from './scope';
 
 test('Expression evaluation', () => {
-    const actual = [...expressions, ...potentiallyInvalidExpressions]
+    const manualCode: string[] = [
+        String.raw`let foo: int = 4; foo`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; x.a`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...x }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...x, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...4, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...null, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...Foo, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...never, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...any, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } let x = Foo { a: 3, b: 4 }; Foo { ...anyStruct, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } struct Bar { a: 1..4 } let x = Foo { a: 3, b: 4 }; Foo { ...Bar, b: 0 }`,
+        String.raw`struct Foo { a: int, b: uint } struct Bar { a: uint } Foo { ...Foo { a: 1, b: 2}, ...Bar { a: 5 } }`,
+        String.raw`struct Foo { a: int, b: uint } struct Bar { a: uint } Foo { ...Bar { a: 5 }, ...Foo { a: 1, b: 2} }`,
+    ];
+    const manual = manualCode.map((c) => parseExpression(new SourceDocument(c, 'manual code')));
+
+    const actual = [...expressions, ...potentiallyInvalidExpressions, ...manual]
         .map((e) => {
             let result;
             try {

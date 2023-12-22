@@ -465,9 +465,13 @@ class AstConverter {
         }
         if (context instanceof NaviParser.StructExpressionContext) {
             const name = this.getName(getRequired(context, 'name'));
-            const fields = getRequired(context, 'fields');
+            const fields = getRequired(context, 'fieldsSpread');
+            const spread = getMultiple(fields, 'spread').map((s) =>
+                this.toExpression(getRequired(s, 'expression'))
+            );
             return new StructExpression(
                 name,
+                spread,
                 this.fieldsToList(fields).map(
                     ([fieldName, e]) => new StructExpressionField(fieldName, e)
                 )
