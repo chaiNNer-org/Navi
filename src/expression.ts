@@ -84,7 +84,7 @@ export class NamedExpression implements ExpressionBase {
     }
 
     toStruct(): StructExpression {
-        const s = new StructExpression(this.name, []);
+        const s = new StructExpression(this.name);
         s.source = this.source;
         return s;
     }
@@ -112,21 +112,30 @@ export class StructExpression implements ExpressionBase {
 
     source: Source | undefined = undefined;
 
+    readonly spread: readonly Expression[];
+
     readonly fields: readonly StructExpressionField[];
 
     readonly name: string;
 
-    constructor(name: string, fields: readonly StructExpressionField[] = []) {
+    constructor(
+        name: string,
+        spread: readonly Expression[] = [],
+        fields: readonly StructExpressionField[] = []
+    ) {
         assertValidStructName(name);
         this.name = name;
+        this.spread = spread;
         this.fields = fields;
     }
 
     toString(): string {
-        if (this.fields.length === 0) return this.name + ' {}';
-        return `${this.name} { ${this.fields
-            .map((f) => `${f.name}: ${f.type.toString()}`)
-            .join(', ')} }`;
+        if (this.spread.length + this.fields.length === 0) return this.name + ' {}';
+        const elements: string[] = [
+            ...this.spread.map((s) => `...${s.toString()}`),
+            ...this.fields.map((f) => `${f.name}: ${f.type.toString()}`),
+        ];
+        return `${this.name} { ${elements.join(', ')} }`;
     }
 }
 

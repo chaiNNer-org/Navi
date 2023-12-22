@@ -106,6 +106,11 @@ const expressionSnippets: string[] = [
     String.raw`bar { any: any, never: never, number: number, string: string }`,
     String.raw`foo::bar::baz`,
     String.raw`foo::bar::baz {}`,
+    String.raw`Image { ...never }`,
+    String.raw`Image { ...i, height: uint, channels: int(1..inf) }`,
+    String.raw`Image { .....3 }`,
+    String.raw`Image { ...i , }`,
+    String.raw`Image { ...i, ...j }`,
 
     // match
     String.raw`match never {}`,
@@ -242,6 +247,8 @@ const invalidExpressionSnippets: string[] = [
     String.raw`def { }`,
     String.raw`let { }`,
     String.raw`foo { as: as }`,
+    String.raw`Image { , height: uint }`,
+    String.raw`Image { height: uint, ...i,}`,
 
     // match
     String.raw`match a`,

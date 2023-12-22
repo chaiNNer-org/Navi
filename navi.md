@@ -101,6 +101,33 @@ The field type may be any type except `never`.
 All fields are optional when instantiating a type from a structure definition.
 So `Image`, `Image { width: uint }`, `Image { height: uint }`, and `Image { width: uint, height: uint, channels: uint }` all create the same type given the above type definition for `Image`.
 
+### Spread
+
+Just like in JavaScript, it is possible to spread a structure type into another structure type using the `...` operator.
+
+Example:
+
+```
+struct Image { width: uint, height: uint, channels: uint }
+
+let imageA = Image { width: 100, height: 100, channels: 3 };
+let imageB = Image { ...imageA, width: 200 };
+// imageB is Image { width: 200, height: 100, channels: 3 }
+```
+
+The structure type of the spread expression doesn't have to be the same as the structure type it is spread into.
+
+Example:
+
+```
+struct Size { width: uint, height: uint }
+struct Image { width: uint, height: uint, channels: uint }
+
+let size = Size { width: 100, height: 100 };
+let image = Image { ...size, channels: 3 };
+// image is Image { width: 100, height: 100, channels: 3 }
+```
+
 ### New type pattern
 
 Structure types are only equivalent if they have the same definition and all their fields are equivalent.

@@ -257,6 +257,24 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#fieldsSpread.
+	enterFieldsSpread(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#fieldsSpread.
+	exitFieldsSpread(ctx) {
+	}
+
+
+	// Enter a parse tree produced by NaviParser#spread.
+	enterSpread(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#spread.
+	exitSpread(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#field.
 	enterField(ctx) {
 	}

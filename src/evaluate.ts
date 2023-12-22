@@ -34,6 +34,8 @@ import {
     StructField,
     StructInstanceType,
     Type,
+    UnionType,
+    ValueType,
 } from './types';
 import { union } from './union';
 import { assertNever } from './util';
@@ -152,6 +154,13 @@ export type ErrorDetails =
           of: Type;
           remaining: Type;
           message: string;
+      }
+    | {
+          type: 'Invalid struct spread';
+          expression: StructExpression;
+          spreadExpression: Expression;
+          spread: Type;
+          message: string;
       };
 
 export class EvaluationError extends Error {
@@ -230,6 +239,73 @@ const evaluateStructDefinition = (def: StructDefinition, scope: Scope): StructDe
     }
     return new StructDescriptor(def.name, fields);
 };
+type SpreadType = StructInstanceType | UnionType<StructInstanceType>;
+// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
+function checkStructSpreadOverlap(
+    expression: StructExpression,
+    spreadExpression: Expression,
+    def: StructDescriptor,
+    spread: Type
+): asserts spread is SpreadType | NeverType {
+    if (spread.type === 'never') return;
+    if (spread.type === 'any') {
+        throw new EvaluationError({
+            type: 'Invalid struct spread',
+            expression,
+            spreadExpression,
+            spread,
+            message: `The \`any\` type has no fields cannot be used as a spread value.`,
+        });
+    }
+
+    const items: readonly ValueType[] = spread.type === 'union' ? spread.items : [spread];
+    for (const item of items) {
+        if (item.underlying === 'number' || item.underlying === 'string') {
+            throw new EvaluationError({
+                type: 'Invalid struct spread',
+                expression,
+                spreadExpression,
+                spread,
+                message: `The ${item.underlying} types cannot be used as a spread value.`,
+            });
+        }
+        if (item.type === 'struct' || item.type === 'inverted-set') {
+            throw new EvaluationError({
+                type: 'Invalid struct spread',
+                expression,
+                spreadExpression,
+                spread,
+                message: `The ${item.toString()} type is not guaranteed to have any fields and cannot be used as a spread value.`,
+            });
+        }
+
+        const overlap = item.descriptor.fields.some((f) => def.fieldNames.has(f.name));
+        if (!overlap) {
+            throw new EvaluationError({
+                type: 'Invalid struct spread',
+                expression,
+                spreadExpression,
+                spread,
+                message: `Fields of ${item.toString()} do not overlap with the fields of ${
+                    def.name
+                }: ${[...def.fieldNames].join(', ')}.`,
+            });
+        }
+    }
+}
+const partialFieldAccess = (type: SpreadType, field: string): [Type, boolean] => {
+    const parts: NonNeverType[] = [];
+    let partial = false;
+    for (const item of type.type === 'union' ? type.items : [type]) {
+        const f = item.getField(field);
+        if (f) {
+            parts.push(f);
+        } else {
+            partial = true;
+        }
+    }
+    return [union(...parts), partial];
+};
 const evaluateStructImpl = (
     expression: StructExpression,
     scope: Scope,
@@ -238,8 +314,7 @@ const evaluateStructImpl = (
 ): Type => {
     definition.descriptor ??= evaluateStructDefinition(definition.definition, definitionScope);
 
-    // no fields
-    if (expression.fields.length === 0) {
+    if (expression.spread.length + expression.fields.length === 0) {
         return definition.descriptor.default;
     }
 
@@ -257,11 +332,44 @@ const evaluateStructImpl = (
         });
     }
 
+    const spread: SpreadType[] = [];
+    let hasNeverSpread = false;
+    for (const spreadExpression of expression.spread) {
+        const s = evaluate(spreadExpression, scope);
+
+        // check that spread and struct are compatible
+        if (definition.descriptor.fields.length === 0) {
+            throw new EvaluationError({
+                type: 'Invalid struct spread',
+                expression,
+                spreadExpression,
+                spread: s,
+                message: `The struct ${definition.descriptor.name} has no fields and does not allow spread values.`,
+            });
+        }
+
+        checkStructSpreadOverlap(expression, spreadExpression, definition.descriptor, s);
+
+        // if the spread is never, then the whole struct is never
+        if (s.type === 'never') {
+            // we can't return never directly, because we have to verify the
+            // other spread expressions as well
+            hasNeverSpread = true;
+            continue;
+        }
+
+        spread.push(s);
+    }
+    if (hasNeverSpread) {
+        return NeverType.instance;
+    }
+
     const expressionFields = new Map(expression.fields.map((f) => [f.name, f.type]));
 
     const fields: NonNeverType[] = [];
     for (const dField of definition.descriptor.fields) {
-        const eField = expressionFields.get(dField.name);
+        const { name } = dField;
+        const eField = expressionFields.get(name);
         let type;
         if (eField) {
             type = evaluate(eField, scope);
@@ -272,11 +380,45 @@ const evaluateStructImpl = (
                     type: 'Incompatible field type',
                     expression,
                     definition: definition.definition,
-                    field: { name: dField.name, expression: type, definition: dField.type },
-                    message: `The type ${type.toString()} of the ${
-                        dField.name
-                    } field is not compatible with its type definition ${dField.type.toString()}.`,
+                    field: { name, expression: type, definition: dField.type },
+                    message: `The type ${type.toString()} of the ${name} field is not compatible with its type definition ${dField.type.toString()}.`,
                 });
+            }
+        } else if (spread.length > 0) {
+            // we have to go through the spreads in reverse order and keep
+            // going until the field access is no longer partial
+            type = NeverType.instance;
+            let partial = true;
+            for (let i = spread.length - 1; i >= 0 && partial; i -= 1) {
+                const spreadType = spread[i];
+                const [t, p] = partialFieldAccess(spreadType, name);
+
+                if (!isSubsetOf(t, dField.type)) {
+                    throw new EvaluationError({
+                        type: 'Invalid struct spread',
+                        expression,
+                        spreadExpression: expression.spread[i],
+                        spread: spreadType,
+                        message:
+                            `The type ${t.toString()} of the ${name} field is not compatible with its type definition ${dField.type.toString()}.` +
+                            ` The result of accessing the field ${name} for spread type ${spreadType.toString()} is incompatible with the field of struct type ${
+                                definition.descriptor.name
+                            }.`,
+                    });
+                }
+
+                type = union(type, t);
+                partial = p;
+            }
+
+            if (partial) {
+                // still partial, so we have to fall back to the definition type
+                type = union(type, dField.type);
+            } else {
+                // if it's not partial, then this shouldn't be never
+                if (type.type === 'never') {
+                    throw new Error('Implementation is incorrect');
+                }
             }
         } else {
             // default to definition type

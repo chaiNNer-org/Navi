@@ -457,12 +457,14 @@ export class StructField {
 export class StructDescriptor {
     readonly name: string;
     readonly fields: readonly StructField[];
+    readonly fieldNames: ReadonlySet<string> = new Set();
     readonly default: StructInstanceType;
 
     constructor(name: string, fields: readonly StructField[] = EMPTY_ARRAY) {
         assertValidStructName(name);
         this.name = name;
         this.fields = fields;
+        this.fieldNames = new Set(fields.map((f) => f.name));
 
         this.default = StructInstanceType.fromDescriptorUnchecked(
             this,
