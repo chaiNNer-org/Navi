@@ -13,7 +13,6 @@ import {
     StringLiteralType,
     StringPrimitive,
     StructInstanceType,
-    StructType,
     StructValueType,
     Type,
     UnionType,
@@ -283,8 +282,8 @@ type BaseValueTypes<T extends ValueType> = T extends NumberPrimitive
     ? NumberPrimitive
     : T extends StringPrimitive
     ? StringPrimitive
-    : T extends StructType
-    ? StructType
+    : T extends StructValueType
+    ? StructValueType
     : never;
 type BaseTypes<T extends Type> = T extends ValueType
     ? BaseValueTypes<T>
