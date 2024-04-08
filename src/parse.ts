@@ -1,4 +1,10 @@
-import antlr4 from 'antlr4';
+import {
+    CommonToken,
+    CommonTokenStream,
+    ErrorListener,
+    InputStream,
+    ParserRuleContext,
+} from 'antlr4';
 import NaviLexer from './antlr4/NaviLexer';
 import NaviParser from './antlr4/NaviParser';
 import { Declaration, IntrinsicFunctionDeclaration } from './declaration';
@@ -37,7 +43,7 @@ import {
     StringType,
 } from './types';
 import { newBounds } from './types-util';
-import { assertNever, noop } from './util';
+import { assertNever } from './util';
 
 type FilterContextName<T extends string> = T extends `${string}Context` ? T : never;
 type ContextNames = FilterContextName<keyof typeof NaviParser>;
@@ -46,18 +52,15 @@ type RuleNameOfContext<T extends string> = T extends `${infer Rule}Context` ? Ru
 type RuleNames = RuleNameOfContext<ContextNames>;
 
 export class ConversionError extends Error {
-    context: antlr4.ParserRuleContext;
+    context: ParserRuleContext;
 
-    constructor(context: antlr4.ParserRuleContext, message: string) {
+    constructor(context: ParserRuleContext, message: string) {
         super(`Unable to convert \`${context.getText()}\`: ${message}`);
         this.context = context;
     }
 }
 
-const getOptional = <
-    T extends antlr4.ParserRuleContext,
-    K extends keyof T & Uncapitalize<RuleNames>
->(
+const getOptional = <T extends ParserRuleContext, K extends keyof T & Uncapitalize<RuleNames>>(
     context: T,
     key: K
 ): Contexts[`${Capitalize<K>}Context`] | undefined => {
@@ -75,10 +78,7 @@ const getOptional = <
     }
     return result;
 };
-const getRequired = <
-    T extends antlr4.ParserRuleContext,
-    K extends keyof T & Uncapitalize<RuleNames>
->(
+const getRequired = <T extends ParserRuleContext, K extends keyof T & Uncapitalize<RuleNames>>(
     context: T,
     key: K
 ): Contexts[`${Capitalize<K>}Context`] => {
@@ -91,10 +91,7 @@ const getRequired = <
     }
     return result;
 };
-const getMultiple = <
-    T extends antlr4.ParserRuleContext,
-    K extends keyof T & Uncapitalize<RuleNames>
->(
+const getMultiple = <T extends ParserRuleContext, K extends keyof T & Uncapitalize<RuleNames>>(
     context: T,
     key: K
 ): Contexts[`${Capitalize<K>}Context`][] => {
@@ -113,11 +110,11 @@ const getMultiple = <
 interface Token {
     getText(): string;
     toString(): string;
-    getPayload(): antlr4.CommonToken;
+    getPayload(): CommonToken;
 }
 
 const getOptionalToken = <
-    T extends antlr4.ParserRuleContext,
+    T extends ParserRuleContext,
     K extends keyof T & Capitalize<keyof T & string> & string
 >(
     context: T,
@@ -137,7 +134,7 @@ const getOptionalToken = <
     return result;
 };
 const getRequiredToken = <
-    T extends antlr4.ParserRuleContext,
+    T extends ParserRuleContext,
     K extends keyof T & Capitalize<keyof T & string> & string
 >(
     context: T,
@@ -153,7 +150,7 @@ const getRequiredToken = <
     return result;
 };
 const getMultipleTokens = <
-    T extends antlr4.ParserRuleContext,
+    T extends ParserRuleContext,
     K extends keyof T & Capitalize<keyof T & string> & string
 >(
     context: T,
@@ -175,7 +172,7 @@ interface OperatorToken<T> {
     token: Token;
 }
 const getOperatorsInOrder = <
-    T extends antlr4.ParserRuleContext,
+    T extends ParserRuleContext,
     K extends keyof T & Capitalize<keyof T & string> & string
 >(
     context: T,
@@ -246,11 +243,13 @@ class AstConverter {
         this.document = document;
     }
 
-    private getSource(context: antlr4.ParserRuleContext): Source {
-        const interval = context.getSourceInterval();
+    private getSource(context: ParserRuleContext): Source {
         return {
             document: this.document,
-            span: [interval.start, interval.start + interval.length],
+            span: [
+                context.start.tokenIndex,
+                context.stop ? context.stop.tokenIndex : context.start.stop,
+            ],
         };
     }
 
@@ -703,21 +702,24 @@ class AstConverter {
     }
 }
 
-type ErrorListener = Parameters<antlr4.Recognizer['addErrorListener']>[0];
-const errorListener: ErrorListener = {
-    syntaxError: (recognizer, offendingSymbol, line, column, msg): void => {
+class MyErrorListener extends ErrorListener<unknown> {
+    syntaxError(
+        recognizer: unknown,
+        offendingSymbol: unknown,
+        line: number,
+        column: number,
+        msg: string
+    ): void {
         throw new SyntaxError(`At ${line}:${column}: ${msg}`);
-    },
-    reportAmbiguity: noop,
-    reportAttemptingFullContext: noop,
-    reportContextSensitivity: noop,
-};
+    }
+}
+const errorListener = new MyErrorListener();
 const getParser = (code: string): NaviParser => {
-    const chars = new antlr4.InputStream(code);
+    const chars = new InputStream(code);
     const lexer = new NaviLexer(chars);
     lexer.removeErrorListeners();
     lexer.addErrorListener(errorListener);
-    const tokens = new antlr4.CommonTokenStream(lexer);
+    const tokens = new CommonTokenStream(lexer);
     const parser = new NaviParser(tokens);
     parser.removeErrorListeners();
     parser.addErrorListener(errorListener);
