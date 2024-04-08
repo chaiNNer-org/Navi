@@ -1,4 +1,4 @@
-// Generated from src/antlr4/Navi.g4 by ANTLR 4.10.1
+// Generated from src/antlr4/Navi.g4 by ANTLR 4.13.1
 // jshint ignore: start
 import antlr4 from 'antlr4';
 import NaviListener from './NaviListener.js';
@@ -146,7 +146,7 @@ const atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
 
 const decisionsToDFA = atn.decisionToState.map( (ds, index) => new antlr4.dfa.DFA(ds, index) );
 
-const sharedContextCache = new antlr4.PredictionContextCache();
+const sharedContextCache = new antlr4.atn.PredictionContextCache();
 
 export default class NaviParser extends antlr4.Parser {
 
@@ -190,33 +190,29 @@ export default class NaviParser extends antlr4.Parser {
         this.symbolicNames = NaviParser.symbolicNames;
     }
 
-    get atn() {
-        return atn;
-    }
-
 
 
 	definitionDocument() {
 	    let localctx = new DefinitionDocumentContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 0, NaviParser.RULE_definitionDocument);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 78;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << NaviParser.Def) | (1 << NaviParser.Let) | (1 << NaviParser.Struct) | (1 << NaviParser.Enum) | (1 << NaviParser.Intrinsic))) !== 0)) {
+	        while((((_la) & ~0x1f) === 0 && ((1 << _la) & 7438336) !== 0)) {
 	            this.state = 76;
 	            this._errHandler.sync(this);
 	            switch(this._input.LA(1)) {
-	            case NaviParser.Def:
-	            case NaviParser.Let:
-	            case NaviParser.Struct:
-	            case NaviParser.Enum:
+	            case 15:
+	            case 16:
+	            case 20:
+	            case 21:
 	                this.state = 74;
 	                this.definition();
 	                break;
-	            case NaviParser.Intrinsic:
+	            case 22:
 	                this.state = 75;
 	                this.declaration();
 	                break;
@@ -248,13 +244,13 @@ export default class NaviParser extends antlr4.Parser {
 	expressionDocument() {
 	    let localctx = new ExpressionDocumentContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 2, NaviParser.RULE_expressionDocument);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 86;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << NaviParser.Def) | (1 << NaviParser.Let) | (1 << NaviParser.Struct) | (1 << NaviParser.Enum))) !== 0)) {
+	        while((((_la) & ~0x1f) === 0 && ((1 << _la) & 3244032) !== 0)) {
 	            this.state = 83;
 	            this.definition();
 	            this.state = 88;
@@ -307,7 +303,7 @@ export default class NaviParser extends antlr4.Parser {
 	intrinsicFunctionDeclaration() {
 	    let localctx = new IntrinsicFunctionDeclarationContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 6, NaviParser.RULE_intrinsicFunctionDeclaration);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 94;
@@ -321,7 +317,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 99;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.T__11) {
+	        if(_la===12) {
 	            this.state = 98;
 	            this.assert();
 	        }
@@ -351,22 +347,22 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 107;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.Struct:
+	        case 20:
 	            this.enterOuterAlt(localctx, 1);
 	            this.state = 103;
 	            this.structDefinition();
 	            break;
-	        case NaviParser.Def:
+	        case 15:
 	            this.enterOuterAlt(localctx, 2);
 	            this.state = 104;
 	            this.functionDefinition();
 	            break;
-	        case NaviParser.Let:
+	        case 16:
 	            this.enterOuterAlt(localctx, 3);
 	            this.state = 105;
 	            this.variableDefinition();
 	            break;
-	        case NaviParser.Enum:
+	        case 21:
 	            this.enterOuterAlt(localctx, 4);
 	            this.state = 106;
 	            this.enumDefinition();
@@ -402,11 +398,11 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 113;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.T__0:
+	        case 1:
 	            this.state = 111;
 	            this.match(NaviParser.T__0);
 	            break;
-	        case NaviParser.T__2:
+	        case 3:
 	            this.state = 112;
 	            this.fields();
 	            break;
@@ -432,7 +428,7 @@ export default class NaviParser extends antlr4.Parser {
 	functionDefinition() {
 	    let localctx = new FunctionDefinitionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 12, NaviParser.RULE_functionDefinition);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 115;
@@ -444,7 +440,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 119;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.T__11) {
+	        if(_la===12) {
 	            this.state = 118;
 	            this.assert();
 	        }
@@ -452,7 +448,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 126;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.T__1:
+	        case 2:
 	            this.state = 121;
 	            this.match(NaviParser.T__1);
 	            this.state = 122;
@@ -460,7 +456,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 123;
 	            this.match(NaviParser.T__0);
 	            break;
-	        case NaviParser.T__2:
+	        case 3:
 	            this.state = 125;
 	            this.scopeExpression();
 	            break;
@@ -486,7 +482,7 @@ export default class NaviParser extends antlr4.Parser {
 	variableDefinition() {
 	    let localctx = new VariableDefinitionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 14, NaviParser.RULE_variableDefinition);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 128;
@@ -496,7 +492,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 131;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.T__11) {
+	        if(_la===12) {
 	            this.state = 130;
 	            this.assert();
 	        }
@@ -526,7 +522,7 @@ export default class NaviParser extends antlr4.Parser {
 	enumDefinition() {
 	    let localctx = new EnumDefinitionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 16, NaviParser.RULE_enumDefinition);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 137;
@@ -538,7 +534,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 153;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.Identifier) {
+	        while(_la===34) {
 	            this.state = 140;
 	            this.enumVariant();
 	            this.state = 145;
@@ -559,7 +555,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 149;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 148;
 	                this.match(NaviParser.T__3);
 	            }
@@ -589,7 +585,7 @@ export default class NaviParser extends antlr4.Parser {
 	enumVariant() {
 	    let localctx = new EnumVariantContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 18, NaviParser.RULE_enumVariant);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 158;
@@ -597,7 +593,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 160;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.T__2) {
+	        if(_la===3) {
 	            this.state = 159;
 	            this.fields();
 	        }
@@ -740,7 +736,7 @@ export default class NaviParser extends antlr4.Parser {
 	matchExpression() {
 	    let localctx = new MatchExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 22, NaviParser.RULE_matchExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 182;
@@ -752,7 +748,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 196;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << NaviParser.T__2) | (1 << NaviParser.T__5) | (1 << NaviParser.Match) | (1 << NaviParser.If) | (1 << NaviParser.Discard) | (1 << NaviParser.IntInterval) | (1 << NaviParser.NonIntInterval) | (1 << NaviParser.IntervalInclusive) | (1 << NaviParser.IntervalMinExclusive) | (1 << NaviParser.IntervalMaxExclusive) | (1 << NaviParser.IntervalExclusive))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (NaviParser.Number - 32)) | (1 << (NaviParser.String - 32)) | (1 << (NaviParser.Identifier - 32)) | (1 << (NaviParser.OpMinus - 32)))) !== 0)) {
+	        if((((_la) & ~0x1f) === 0 && ((1 << _la) & 4261806152) !== 0) || ((((_la - 32)) & ~0x1f) === 0 && ((1 << (_la - 32)) & 15) !== 0)) {
 	            this.state = 185;
 	            this.matchArm();
 	            this.state = 190;
@@ -773,7 +769,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 194;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 193;
 	                this.match(NaviParser.T__3);
 	            }
@@ -801,30 +797,30 @@ export default class NaviParser extends antlr4.Parser {
 	matchArm() {
 	    let localctx = new MatchArmContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 24, NaviParser.RULE_matchArm);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 202;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.Discard:
+	        case 25:
 	            this.state = 200;
 	            this.match(NaviParser.Discard);
 	            break;
-	        case NaviParser.T__2:
-	        case NaviParser.T__5:
-	        case NaviParser.Match:
-	        case NaviParser.If:
-	        case NaviParser.IntInterval:
-	        case NaviParser.NonIntInterval:
-	        case NaviParser.IntervalInclusive:
-	        case NaviParser.IntervalMinExclusive:
-	        case NaviParser.IntervalMaxExclusive:
-	        case NaviParser.IntervalExclusive:
-	        case NaviParser.Number:
-	        case NaviParser.String:
-	        case NaviParser.Identifier:
-	        case NaviParser.OpMinus:
+	        case 3:
+	        case 6:
+	        case 17:
+	        case 18:
+	        case 26:
+	        case 27:
+	        case 28:
+	        case 29:
+	        case 30:
+	        case 31:
+	        case 32:
+	        case 33:
+	        case 34:
+	        case 35:
 	            this.state = 201;
 	            this.expression();
 	            break;
@@ -834,7 +830,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 206;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.As) {
+	        if(_la===14) {
 	            this.state = 204;
 	            this.match(NaviParser.As);
 	            this.state = 205;
@@ -941,7 +937,7 @@ export default class NaviParser extends antlr4.Parser {
 	scopeExpression() {
 	    let localctx = new ScopeExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 32, NaviParser.RULE_scopeExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 221;
@@ -949,7 +945,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 225;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << NaviParser.Def) | (1 << NaviParser.Let) | (1 << NaviParser.Struct) | (1 << NaviParser.Enum))) !== 0)) {
+	        while((((_la) & ~0x1f) === 0 && ((1 << _la) & 3244032) !== 0)) {
 	            this.state = 222;
 	            this.definition();
 	            this.state = 227;
@@ -992,11 +988,11 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 237;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.T__2:
+	        case 3:
 	            this.state = 235;
 	            this.scopeExpression();
 	            break;
-	        case NaviParser.If:
+	        case 18:
 	            this.state = 236;
 	            this.ifExpression();
 	            break;
@@ -1022,7 +1018,7 @@ export default class NaviParser extends antlr4.Parser {
 	fieldAccessExpression() {
 	    let localctx = new FieldAccessExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 36, NaviParser.RULE_fieldAccessExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 239;
@@ -1030,7 +1026,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 244;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.T__8) {
+	        while(_la===9) {
 	            this.state = 240;
 	            this.match(NaviParser.T__8);
 	            this.state = 241;
@@ -1058,13 +1054,13 @@ export default class NaviParser extends antlr4.Parser {
 	negateExpression() {
 	    let localctx = new NegateExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 38, NaviParser.RULE_negateExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 248;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.OpMinus) {
+	        if(_la===35) {
 	            this.state = 247;
 	            this.match(NaviParser.OpMinus);
 	        }
@@ -1090,7 +1086,7 @@ export default class NaviParser extends antlr4.Parser {
 	multiplicativeExpression() {
 	    let localctx = new MultiplicativeExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 40, NaviParser.RULE_multiplicativeExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 252;
@@ -1098,10 +1094,10 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 257;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.OpMult || _la===NaviParser.OpDiv) {
+	        while(_la===37 || _la===38) {
 	            this.state = 253;
 	            _la = this._input.LA(1);
-	            if(!(_la===NaviParser.OpMult || _la===NaviParser.OpDiv)) {
+	            if(!(_la===37 || _la===38)) {
 	            this._errHandler.recoverInline(this);
 	            }
 	            else {
@@ -1133,7 +1129,7 @@ export default class NaviParser extends antlr4.Parser {
 	additiveExpression() {
 	    let localctx = new AdditiveExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 42, NaviParser.RULE_additiveExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 260;
@@ -1141,10 +1137,10 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 265;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.OpMinus || _la===NaviParser.OpPlus) {
+	        while(_la===35 || _la===36) {
 	            this.state = 261;
 	            _la = this._input.LA(1);
-	            if(!(_la===NaviParser.OpMinus || _la===NaviParser.OpPlus)) {
+	            if(!(_la===35 || _la===36)) {
 	            this._errHandler.recoverInline(this);
 	            }
 	            else {
@@ -1176,7 +1172,7 @@ export default class NaviParser extends antlr4.Parser {
 	intersectionExpression() {
 	    let localctx = new IntersectionExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 44, NaviParser.RULE_intersectionExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 268;
@@ -1184,7 +1180,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 273;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.T__9) {
+	        while(_la===10) {
 	            this.state = 269;
 	            this.match(NaviParser.T__9);
 	            this.state = 270;
@@ -1212,7 +1208,7 @@ export default class NaviParser extends antlr4.Parser {
 	unionExpression() {
 	    let localctx = new UnionExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 46, NaviParser.RULE_unionExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 276;
@@ -1220,7 +1216,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 281;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.T__10) {
+	        while(_la===11) {
 	            this.state = 277;
 	            this.match(NaviParser.T__10);
 	            this.state = 278;
@@ -1248,7 +1244,7 @@ export default class NaviParser extends antlr4.Parser {
 	comparisonExpression() {
 	    let localctx = new ComparisonExpressionContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 48, NaviParser.RULE_comparisonExpression);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 284;
@@ -1256,10 +1252,10 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 287;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(((((_la - 39)) & ~0x1f) == 0 && ((1 << (_la - 39)) & ((1 << (NaviParser.OpEqual - 39)) | (1 << (NaviParser.OpNotEqual - 39)) | (1 << (NaviParser.OpGt - 39)) | (1 << (NaviParser.OpLt - 39)) | (1 << (NaviParser.OpGte - 39)) | (1 << (NaviParser.OpLte - 39)))) !== 0)) {
+	        if(((((_la - 39)) & ~0x1f) === 0 && ((1 << (_la - 39)) & 63) !== 0)) {
 	            this.state = 285;
 	            _la = this._input.LA(1);
-	            if(!(((((_la - 39)) & ~0x1f) == 0 && ((1 << (_la - 39)) & ((1 << (NaviParser.OpEqual - 39)) | (1 << (NaviParser.OpNotEqual - 39)) | (1 << (NaviParser.OpGt - 39)) | (1 << (NaviParser.OpLt - 39)) | (1 << (NaviParser.OpGte - 39)) | (1 << (NaviParser.OpLte - 39)))) !== 0))) {
+	            if(!(((((_la - 39)) & ~0x1f) === 0 && ((1 << (_la - 39)) & 63) !== 0))) {
 	            this._errHandler.recoverInline(this);
 	            }
 	            else {
@@ -1312,13 +1308,13 @@ export default class NaviParser extends antlr4.Parser {
 	args() {
 	    let localctx = new ArgsContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 52, NaviParser.RULE_args);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 302;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << NaviParser.T__2) | (1 << NaviParser.T__5) | (1 << NaviParser.Match) | (1 << NaviParser.If) | (1 << NaviParser.IntInterval) | (1 << NaviParser.NonIntInterval) | (1 << NaviParser.IntervalInclusive) | (1 << NaviParser.IntervalMinExclusive) | (1 << NaviParser.IntervalMaxExclusive) | (1 << NaviParser.IntervalExclusive))) !== 0) || ((((_la - 32)) & ~0x1f) == 0 && ((1 << (_la - 32)) & ((1 << (NaviParser.Number - 32)) | (1 << (NaviParser.String - 32)) | (1 << (NaviParser.Identifier - 32)) | (1 << (NaviParser.OpMinus - 32)))) !== 0)) {
+	        if((((_la) & ~0x1f) === 0 && ((1 << _la) & 4228251720) !== 0) || ((((_la - 32)) & ~0x1f) === 0 && ((1 << (_la - 32)) & 15) !== 0)) {
 	            this.state = 291;
 	            this.expression();
 	            this.state = 296;
@@ -1339,7 +1335,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 300;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 299;
 	                this.match(NaviParser.T__3);
 	            }
@@ -1365,7 +1361,7 @@ export default class NaviParser extends antlr4.Parser {
 	fields() {
 	    let localctx = new FieldsContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 54, NaviParser.RULE_fields);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 304;
@@ -1373,7 +1369,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 316;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.Identifier) {
+	        if(_la===34) {
 	            this.state = 305;
 	            this.field();
 	            this.state = 310;
@@ -1394,7 +1390,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 314;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 313;
 	                this.match(NaviParser.T__3);
 	            }
@@ -1422,7 +1418,7 @@ export default class NaviParser extends antlr4.Parser {
 	fieldsSpread() {
 	    let localctx = new FieldsSpreadContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 56, NaviParser.RULE_fieldsSpread);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 320;
@@ -1430,7 +1426,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 358;
 	        this._errHandler.sync(this);
 	        switch(this._input.LA(1)) {
-	        case NaviParser.OpSpread:
+	        case 45:
 	            this.state = 321;
 	            this.spread();
 	            this.state = 326;
@@ -1451,13 +1447,13 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 343;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 329;
 	                this.match(NaviParser.T__3);
 	                this.state = 341;
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
-	                if(_la===NaviParser.Identifier) {
+	                if(_la===34) {
 	                    this.state = 330;
 	                    this.field();
 	                    this.state = 335;
@@ -1478,7 +1474,7 @@ export default class NaviParser extends antlr4.Parser {
 	                    this.state = 339;
 	                    this._errHandler.sync(this);
 	                    _la = this._input.LA(1);
-	                    if(_la===NaviParser.T__3) {
+	                    if(_la===4) {
 	                        this.state = 338;
 	                        this.match(NaviParser.T__3);
 	                    }
@@ -1488,12 +1484,12 @@ export default class NaviParser extends antlr4.Parser {
 	            }
 
 	            break;
-	        case NaviParser.T__4:
-	        case NaviParser.Identifier:
+	        case 5:
+	        case 34:
 	            this.state = 356;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.Identifier) {
+	            if(_la===34) {
 	                this.state = 345;
 	                this.field();
 	                this.state = 350;
@@ -1514,7 +1510,7 @@ export default class NaviParser extends antlr4.Parser {
 	                this.state = 354;
 	                this._errHandler.sync(this);
 	                _la = this._input.LA(1);
-	                if(_la===NaviParser.T__3) {
+	                if(_la===4) {
 	                    this.state = 353;
 	                    this.match(NaviParser.T__3);
 	                }
@@ -1596,7 +1592,7 @@ export default class NaviParser extends antlr4.Parser {
 	parameters() {
 	    let localctx = new ParametersContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 62, NaviParser.RULE_parameters);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 368;
@@ -1604,7 +1600,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 380;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.Identifier) {
+	        if(_la===34) {
 	            this.state = 369;
 	            this.parameter();
 	            this.state = 374;
@@ -1625,7 +1621,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 378;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 377;
 	                this.match(NaviParser.T__3);
 	            }
@@ -1653,7 +1649,7 @@ export default class NaviParser extends antlr4.Parser {
 	varArgParameters() {
 	    let localctx = new VarArgParametersContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 64, NaviParser.RULE_varArgParameters);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 384;
@@ -1661,11 +1657,11 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 403;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        if(_la===NaviParser.Identifier || _la===NaviParser.OpSpread) {
+	        if(_la===34 || _la===45) {
 	            this.state = 398;
 	            this._errHandler.sync(this);
 	            switch(this._input.LA(1)) {
-	            case NaviParser.Identifier:
+	            case 34:
 	                this.state = 385;
 	                this.parameter();
 	                this.state = 390;
@@ -1694,7 +1690,7 @@ export default class NaviParser extends antlr4.Parser {
 
 	                }
 	                break;
-	            case NaviParser.OpSpread:
+	            case 45:
 	                this.state = 397;
 	                this.varArgParameter();
 	                break;
@@ -1704,7 +1700,7 @@ export default class NaviParser extends antlr4.Parser {
 	            this.state = 401;
 	            this._errHandler.sync(this);
 	            _la = this._input.LA(1);
-	            if(_la===NaviParser.T__3) {
+	            if(_la===4) {
 	                this.state = 400;
 	                this.match(NaviParser.T__3);
 	            }
@@ -1809,7 +1805,7 @@ export default class NaviParser extends antlr4.Parser {
 	name() {
 	    let localctx = new NameContext(this, this._ctx, this.state);
 	    this.enterRule(localctx, 72, NaviParser.RULE_name);
-	    var _la = 0; // Token type
+	    var _la = 0;
 	    try {
 	        this.enterOuterAlt(localctx, 1);
 	        this.state = 417;
@@ -1817,7 +1813,7 @@ export default class NaviParser extends antlr4.Parser {
 	        this.state = 422;
 	        this._errHandler.sync(this);
 	        _la = this._input.LA(1);
-	        while(_la===NaviParser.T__12) {
+	        while(_la===13) {
 	            this.state = 418;
 	            this.match(NaviParser.T__12);
 	            this.state = 419;

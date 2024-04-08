@@ -27,13 +27,17 @@ const config = {
                 "fs.readFileSync(__dirname + '/global.navi', 'utf-8')": JSON.stringify(globalNavi),
             },
             delimiters: ['', ''],
+            preventAssignment: true,
         }),
-        nodeResolve({ extensions: ['.mjs', '.js', '.json', '.ts'] }),
+        nodeResolve({ extensions: ['.mjs', '.js', '.json', '.ts'], browser: true }),
         typescript(),
         run({
             execArgv: ['-r', 'source-map-support/register'],
         }),
     ],
+    treeshake: {
+        preset: 'smallest',
+    },
 };
 
 // eslint-disable-next-line import/no-default-export

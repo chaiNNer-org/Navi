@@ -7,7 +7,7 @@ import util from 'util';
 
 const exec = util.promisify(_exec);
 
-const version = '4.10.1';
+const version = '4.13.1';
 const jar = path.join(__dirname, '.antlr', `antlr-${version}-complete.jar`);
 
 const fileExists = (file: string): Promise<boolean> =>
