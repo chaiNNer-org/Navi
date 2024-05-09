@@ -1,3 +1,4 @@
+import { format } from '../src/format';
 import { parseExpression } from '../src/parse';
 import { SourceDocument } from '../src/source';
 
@@ -328,11 +329,15 @@ const invalidExpressionSnippets: string[] = [
 const expressionParsing = (expr: string): string => {
     let result: string;
     try {
-        result = parseExpression(new SourceDocument(expr, 'test document')).toString();
+        const parsed = parseExpression(new SourceDocument(expr, 'test document'));
+        result = format(parsed);
     } catch (error) {
         result = String(error);
     }
-    return `>>> ${expr}\n${result}`;
+    return `${expr
+        .split('\n')
+        .map((l) => (l ? '>>> ' + l : '>>>'))
+        .join('\n')}\n${result}`;
 };
 
 test('Expression parsing', () => {
@@ -342,5 +347,45 @@ test('Expression parsing', () => {
 
 test('Invalid expression parsing', () => {
     const results = invalidExpressionSnippets.map(expressionParsing);
+    expect(results.join('\n\n')).toMatchSnapshot();
+});
+
+const complexExpressions = String.raw`
+def bool::not(value: bool): bool {
+    match value {
+        true => false,
+        false => true
+    }
+}
+not true
+---
+def bool::not(value: bool): bool {
+    if value { false } else { true }
+}
+not true
+---
+def any::neq(a: any, b: any): bool {
+    not a == b
+}
+1 != 2
+---
+def string::includes(s: string, needle: string): bool {
+    string::indexOf(s, needle) != nan
+}
+def string::startsWith(s: string, needle: string): bool {
+    string::indexOf(s, needle) == 0
+}
+def string::endsWith(s: string, needle: string): bool {
+    let l = string::len(needle);
+    string::slice(s, -l, l) == needle
+}
+string::endsWith(s, "foo")
+`
+    .split(/^-{3,}$/m)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+test('Parse complex expressions', () => {
+    const results = complexExpressions.map(expressionParsing);
     expect(results.join('\n\n')).toMatchSnapshot();
 });

@@ -2,7 +2,7 @@
 
 exports[`Expression parsing 1`] = `
 ">>> /* some comment */ 0 // another comment
-    // and another
+>>>     // and another
 0
 
 >>> 0
@@ -237,7 +237,7 @@ null
 foo
 
 >>> foo {}
-foo {}
+foo
 
 >>> foo { foo: 3 }
 foo { foo: 3 }
@@ -255,7 +255,7 @@ bar { any: any, never: never, number: number, string: string }
 foo::bar::baz
 
 >>> foo::bar::baz {}
-foo::bar::baz {}
+foo::bar::baz
 
 >>> Image { ...never }
 Image { ...never }
@@ -276,52 +276,87 @@ Image { ...i, ...j }
 Image { width: width, height: height, channels: 3 }
 
 >>> match never {}
-match never {  }
+match never {}
 
 >>> match (a) {}
-match a {  }
+match a {}
 
 >>> match a|b {}
-match a | b {  }
+match (a | b) {}
 
 >>> match a {}
-match a {  }
+match a {}
 
 >>> match a {} {}
-match a {} {  }
+match a {}
 
 >>> match a { foo: uint } { number => 1 }
-match a { foo: uint } { number => 1 }
+match a { foo: uint } {
+    number => 1,
+}
 
 >>> match a { number => 1, }
-match a { number as a => 1 }
+match a {
+    number as a => 1,
+}
 
 >>> match a { number => 1, string => 2, any => 5 }
-match a { number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a { number => 1, string => 2, _ => 5 }
-match a { number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a { _ => 234, number => 1, string => 2, _ => 5 }
-match a { _ as a => 234, number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    _ as a => 234,
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a {  number as foo => add(foo, 1), _ as foo => foo, }
-match a { number as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, _ as __temp => { let a = __temp; let foo = __temp; foo } }
+match a {
+    number as __temp => { let a = __temp; let foo = __temp; add(foo, 1) },
+    _ as __temp => { let a = __temp; let foo = __temp; foo },
+}
 
 >>> match a { 1 | 2 as foo => add(foo, 1), "bar" => "baz", _ as foo => foo, }
-match a { 1 | 2 as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, "bar" as a => "baz", _ as __temp => { let a = __temp; let foo = __temp; foo } }
+match a {
+    1 | 2 as __temp => { let a = __temp; let foo = __temp; add(foo, 1) },
+    "bar" as a => "baz",
+    _ as __temp => { let a = __temp; let foo = __temp; foo },
+}
 
 >>> match a { foo::bar => baz, }
-match a { foo::bar as a => baz }
+match a {
+    foo::bar as a => baz,
+}
 
 >>> if a { 1 } else { 2 }
-match a { true => 1, false => 2 }
+match a {
+    true => 1,
+    false => 2,
+}
 
 >>> if (a) { 1 } else { 2 }
-match a { true => 1, false => 2 }
+match a {
+    true => 1,
+    false => 2,
+}
 
 >>> if a { 1 } else if b { 2 } else { 3}
-match a { true => 1, false => match b { true => 2, false => 3 } }
+match a {
+    true => 1,
+    false => match b { true => 2, false => 3 },
+}
 
 >>> a.b.c.d.e.f
 a.b.c.d.e.f
@@ -411,62 +446,141 @@ bool::or(bool::and(a::and, b::or), c::not)
 0
 
 >>> { let foo = 0; foo }
-{ let foo = 0; foo }
+{
+    let foo = 0;
+    foo
+}
 
 >>> { def getFoo() = 0; getFoo() }
-{ def getFoo() = 0; getFoo() }
+{
+    def getFoo() {
+        0
+    }
+    getFoo()
+}
 
 >>> { def getFoo() { 0 } getFoo() }
-{ def getFoo() = 0; getFoo() }
+{
+    def getFoo() {
+        0
+    }
+    getFoo()
+}
 
 >>> { struct Foo { bar: 0 } Foo.bar }
-{ struct Foo { bar: 0 } Foo.bar }
+{
+    struct Foo {
+        bar: 0,
+    }
+    Foo.bar
+}
 
 >>> struct false; false
-{ struct false; false }
+{
+    struct false;
+    false
+}
 
 >>> struct Image { width: uint, height: uint, channels: int(1..) } Image
-{ struct Image { width: uint, height: uint, channels: int(1..inf) } Image }
+{
+    struct Image {
+        width: uint,
+        height: uint,
+        channels: int(1..inf),
+    }
+    Image
+}
 
 >>> struct foo::bar; foo::bar
-{ struct foo::bar; foo::bar }
+{
+    struct foo::bar;
+    foo::bar
+}
 
 >>> let bool = true | false; bool
-{ let bool = true | false; bool }
+{
+    let bool = true | false;
+    bool
+}
 
 >>> let std::bool = true | false; std::bool
-{ let std::bool = true | false; std::bool }
+{
+    let std::bool = true | false;
+    std::bool
+}
 
 >>> let a: int = 0; a
-{ let a: int = 0; a }
+{
+    let a: int = 0;
+    a
+}
 
 >>> let a: any = 0; a
-{ let a = 0; a }
+{
+    let a = 0;
+    a
+}
 
 >>> enum Direction { North, East, South, West } Direction
-{ let Direction = Direction::North | Direction::East | Direction::South | Direction::West; struct Direction::North; struct Direction::East; struct Direction::South; struct Direction::West; Direction }
+{
+    let Direction = Direction::North | Direction::East | Direction::South | Direction::West;
+    struct Direction::North;
+    struct Direction::East;
+    struct Direction::South;
+    struct Direction::West;
+    Direction
+}
 
 >>> enum Empty { } Empty
-{ let Empty = (never /* empty union */); Empty }
+{
+    let Empty = /* empty union */ never;
+    Empty
+}
 
 >>> def inc(a: number) = add(a, 1); inc(0)
-{ def inc(a: number) = add(a, 1); inc(0) }
+{
+    def inc(a: number) {
+        add(a, 1)
+    }
+    inc(0)
+}
 
 >>> def math :: inc(a: number) = add(a, 1); math::inc(0)
-{ def math::inc(a: number) = add(a, 1); math::inc(0) }
+{
+    def math::inc(a: number) {
+        add(a, 1)
+    }
+    math::inc(0)
+}
 
 >>> def foo(a: int): int = a; foo(int)
-{ def foo(a: int): int = a; foo(int) }
+{
+    def foo(a: int): int {
+        a
+    }
+    foo(int)
+}
 
 >>> def foo(a: int): int { a + 1 } foo(int)
-{ def foo(a: int): int = number::add(a, 1); foo(int) }
+{
+    def foo(a: int): int {
+        number::add(a, 1)
+    }
+    foo(int)
+}
 
 >>> def foo(a: uint): Image { width: uint } { let width = a + 1; Image { width: width } } foo(int)
-{ def foo(a: uint): Image { width: uint } { let width = number::add(a, 1); Image { width: width } } foo(int) }"
+{
+    def foo(a: uint): Image { width: uint } {
+        let width = number::add(a, 1);
+        Image { width: width }
+    }
+    foo(int)
+}"
 `;
 
 exports[`Invalid expression parsing 1`] = `
-">>> 
+">>>
 SyntaxError: At 1:0: mismatched input '<EOF>' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> öäü0
@@ -536,7 +650,7 @@ SyntaxError: At 1:2: token recognition error at: '"'
 SyntaxError: Bad escaped character in JSON at position 2
 
 >>> "
-    "
+>>>     "
 SyntaxError: At 1:0: token recognition error at: '"
 '
 
@@ -716,4 +830,73 @@ SyntaxError: At 1:38: no viable alternative at input ',S::'
 
 >>> def inc(a::b: number) = add(a, 1); inc(0)
 SyntaxError: At 1:9: mismatched input '::' expecting ':'"
+`;
+
+exports[`Parse complex expressions 1`] = `
+">>> def bool::not(value: bool): bool {
+>>>     match value {
+>>>         true => false,
+>>>         false => true
+>>>     }
+>>> }
+>>> not true
+{
+    def bool::not(value: bool): bool {
+        match value {
+            true as value => false,
+            false as value => true,
+        }
+    }
+    bool::not(true)
+}
+
+>>> def bool::not(value: bool): bool {
+>>>     if value { false } else { true }
+>>> }
+>>> not true
+{
+    def bool::not(value: bool): bool {
+        match value {
+            true => false,
+            false => true,
+        }
+    }
+    bool::not(true)
+}
+
+>>> def any::neq(a: any, b: any): bool {
+>>>     not a == b
+>>> }
+>>> 1 != 2
+{
+    def any::neq(a: any, b: any): bool {
+        any::eq(bool::not(a), b)
+    }
+    any::neq(1, 2)
+}
+
+>>> def string::includes(s: string, needle: string): bool {
+>>>     string::indexOf(s, needle) != nan
+>>> }
+>>> def string::startsWith(s: string, needle: string): bool {
+>>>     string::indexOf(s, needle) == 0
+>>> }
+>>> def string::endsWith(s: string, needle: string): bool {
+>>>     let l = string::len(needle);
+>>>     string::slice(s, -l, l) == needle
+>>> }
+>>> string::endsWith(s, "foo")
+{
+    def string::includes(s: string, needle: string): bool {
+        any::neq(string::indexOf(s, needle), nan)
+    }
+    def string::startsWith(s: string, needle: string): bool {
+        any::eq(string::indexOf(s, needle), 0)
+    }
+    def string::endsWith(s: string, needle: string): bool {
+        let l = string::len(needle);
+        any::eq(string::slice(s, number::neg(l), l), needle)
+    }
+    string::endsWith(s, "foo")
+}"
 `;
