@@ -61,10 +61,10 @@ ifExpression:
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 
-unaryExpression: (OpMinus | Not)? fieldAccessExpression;
+negateExpression: OpMinus? fieldAccessExpression;
 
 multiplicativeExpression:
-	unaryExpression ((OpMult | OpDiv) unaryExpression)*;
+	negateExpression ((OpMult | OpDiv) negateExpression)*;
 
 additiveExpression:
 	multiplicativeExpression (
@@ -82,8 +82,10 @@ comparisonExpression:
 		(OpEqual | OpNotEqual | OpGt | OpGte | OpLt | OpLte) unionExpression
 	)?;
 
+logicalNotExpression: Not* comparisonExpression;
+
 logicalAndExpression:
-	comparisonExpression (And comparisonExpression)*;
+	logicalNotExpression (And logicalNotExpression)*;
 
 logicalOrExpression:
 	logicalAndExpression (Or logicalAndExpression)*;

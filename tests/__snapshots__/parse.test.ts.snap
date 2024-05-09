@@ -407,6 +407,12 @@ bool::and(a, bool::or(b, c))
 >>> a::and and b::or or c::not
 bool::or(bool::and(a::and, b::or), c::not)
 
+>>> not not a
+bool::not(bool::not(a))
+
+>>> not a * b == c
+bool::not(any::eq(number::mul(a, b), c))
+
 >>> { 0 }
 0
 
@@ -634,10 +640,10 @@ SyntaxError: At 1:2: missing Identifier at '<EOF>'
 SyntaxError: At 1:7: mismatched input '::' expecting <EOF>
 
 >>> a | b |
-SyntaxError: At 1:7: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:7: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a & b &
-SyntaxError: At 1:7: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:7: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> | b
 SyntaxError: At 1:0: extraneous input '|' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
@@ -646,10 +652,10 @@ SyntaxError: At 1:0: extraneous input '|' expecting {'{', '(', 'def', 'enum', 'i
 SyntaxError: At 1:0: extraneous input '&' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a === b
-SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a !== b
-SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:4: extraneous input '=' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a == b | c == d
 SyntaxError: At 1:11: mismatched input '==' expecting <EOF>
@@ -658,22 +664,22 @@ SyntaxError: At 1:11: mismatched input '==' expecting <EOF>
 SyntaxError: At 1:11: mismatched input '==' expecting <EOF>
 
 >>> a == b || c == d
-SyntaxError: At 1:8: extraneous input '|' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:8: extraneous input '|' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a == b && c == d
-SyntaxError: At 1:8: extraneous input '&' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:8: extraneous input '&' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a-
-SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a+
-SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a*
-SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a/
-SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: mismatched input '<EOF>' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> +a
 SyntaxError: At 1:0: extraneous input '+' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
@@ -691,19 +697,16 @@ SyntaxError: At 1:1: extraneous input '-' expecting {'{', '(', 'if', 'match', In
 SyntaxError: At 1:3: extraneous input '-' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier}
 
 >>> a++a
-SyntaxError: At 1:2: extraneous input '+' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: extraneous input '+' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a**a
-SyntaxError: At 1:2: extraneous input '*' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+SyntaxError: At 1:2: extraneous input '*' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> a-100
 SyntaxError: At 1:1: extraneous input '-100' expecting <EOF>
 
->>> not not a
-SyntaxError: At 1:4: extraneous input 'not' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier}
-
 >>> not and a
-SyntaxError: At 1:4: extraneous input 'and' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier}
+SyntaxError: At 1:4: extraneous input 'and' expecting {'{', '(', 'if', 'match', 'not', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> and and b
 SyntaxError: At 1:0: mismatched input 'and' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}

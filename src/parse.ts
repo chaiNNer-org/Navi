@@ -360,12 +360,13 @@ class AstConverter {
             | Contexts['ExpressionContext']
             | Contexts['LogicalOrExpressionContext']
             | Contexts['LogicalAndExpressionContext']
+            | Contexts['LogicalNotExpressionContext']
             | Contexts['ComparisonExpressionContext']
             | Contexts['UnionExpressionContext']
             | Contexts['IntersectionExpressionContext']
             | Contexts['AdditiveExpressionContext']
             | Contexts['MultiplicativeExpressionContext']
-            | Contexts['UnaryExpressionContext']
+            | Contexts['NegateExpressionContext']
             | Contexts['FieldAccessExpressionContext']
             | Contexts['PrimaryExpressionContext']
             | Contexts['FunctionCallContext']
@@ -393,9 +394,17 @@ class AstConverter {
             return new FunctionCallExpression('bool::or', items);
         }
         if (context instanceof NaviParser.LogicalAndExpressionContext) {
-            const items = getMultiple(context, 'comparisonExpression').map(this.toExpression);
+            const items = getMultiple(context, 'logicalNotExpression').map(this.toExpression);
             if (items.length === 1) return items[0];
             return new FunctionCallExpression('bool::and', items);
+        }
+        if (context instanceof NaviParser.LogicalNotExpressionContext) {
+            let expr = this.toExpression(getRequired(context, 'comparisonExpression'));
+            const notCount = getMultipleTokens(context, 'Not').length;
+            for (let i = 0; i < notCount; i++) {
+                expr = new FunctionCallExpression('bool::not', [expr]);
+            }
+            return expr;
         }
         if (context instanceof NaviParser.ComparisonExpressionContext) {
             const items = getMultiple(context, 'unionExpression').map(this.toExpression);
@@ -441,7 +450,7 @@ class AstConverter {
             );
         }
         if (context instanceof NaviParser.MultiplicativeExpressionContext) {
-            const exprs = getMultiple(context, 'unaryExpression').map(this.toExpression);
+            const exprs = getMultiple(context, 'negateExpression').map(this.toExpression);
             if (exprs.length === 1) return exprs[0];
             const operators = getOperatorsInOrder(context, ['OpDiv', 'OpMult']);
             return new FunctionCallExpression(
@@ -455,13 +464,10 @@ class AstConverter {
                 })
             );
         }
-        if (context instanceof NaviParser.UnaryExpressionContext) {
+        if (context instanceof NaviParser.NegateExpressionContext) {
             const expr = this.toExpression(getRequired(context, 'fieldAccessExpression'));
             if (getOptionalToken(context, 'OpMinus')) {
                 return new FunctionCallExpression('number::neg', [expr]);
-            }
-            if (getOptionalToken(context, 'Not')) {
-                return new FunctionCallExpression('bool::not', [expr]);
             }
             return expr;
         }
