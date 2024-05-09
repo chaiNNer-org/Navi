@@ -171,6 +171,8 @@ const expressionSnippets: string[] = [
     String.raw`a and b or c`,
     String.raw`bool::and(a, b or c)`,
     String.raw`a::and and b::or or c::not`,
+    String.raw`not not a`,
+    String.raw`not a * b == c`,
 
     // scope
     String.raw`{ 0 }`,
@@ -310,7 +312,6 @@ const invalidExpressionSnippets: string[] = [
     String.raw`a-100`,
 
     // logical
-    String.raw`not not a`,
     String.raw`not and a`,
     String.raw`and and b`,
 
