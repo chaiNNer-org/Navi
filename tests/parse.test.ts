@@ -360,16 +360,19 @@ def bool::not(value: bool): bool {
 }
 not true
 ---
+
 def bool::not(value: bool): bool {
     if value { false } else { true }
 }
 not true
 ---
+
 def any::neq(a: any, b: any): bool {
     not a == b
 }
 1 != 2
 ---
+
 def string::includes(s: string, needle: string): bool {
     string::indexOf(s, needle) != nan
 }
@@ -381,6 +384,148 @@ def string::endsWith(s: string, needle: string): bool {
     string::slice(s, -l, l) == needle
 }
 string::endsWith(s, "foo")
+---
+
+let i = Input0;
+let mode = Input1;
+
+let scale = Input2;
+let width = Input3;
+let height = Input4;
+
+match mode {
+    ImageResizeMode::Percentage => Image {
+        width: max(1, int & round(i.width * scale / 100)),
+        height: max(1, int & round(i.height * scale / 100)),
+        channels: i.channels,
+    },
+    ImageResizeMode::Absolute => Image {
+        width: width,
+        height: height,
+        channels: i.channels,
+    },
+}
+---
+
+struct Size { width: uint, height: uint }
+
+let w = Input0.width;
+let h = Input0.height;
+let target = Input1;
+let side = Input2;
+let condition = Input4;
+
+def compareCondition(b: uint): bool {
+    match condition {
+        ResizeCondition::Both => false,
+        ResizeCondition::Downscale => target > b,
+        ResizeCondition::Upscale => target < b
+    }
+}
+
+let same = Size { width: w, height: h };
+
+let outSize = match side {
+    SideSelection::Width => if compareCondition(w) { same } else {
+        Size {
+            width: target,
+            height: max(round((target / w) * h), 1)
+        }
+    },
+    SideSelection::Height => if compareCondition(h) { same } else {
+        Size {
+            width: max(round((target / h) * w), 1),
+            height: target
+        }
+    },
+    SideSelection::ShorterSide => if compareCondition(min(h, w)) { same } else {
+        Size {
+            width: max(round((target / min(h, w)) * w), 1),
+            height: max(round((target / min(h, w)) * h), 1)
+        }
+    },
+    SideSelection::LongerSide => if compareCondition(max(h, w)) { same } else {
+        Size {
+            width: max(round((target / max(h, w)) * w), 1),
+            height: max(round((target / max(h, w)) * h), 1)
+        }
+    },
+};
+
+Image {
+    width: outSize.width,
+    height: outSize.height,
+    channels: Input0.channels
+}
+---
+
+// This is a near verbatim copy of PIL's rotate code
+// to get the size of the rotated image.
+// https://pillow.readthedocs.io/en/stable/_modules/PIL/Image.html#Image.rotate
+struct Point { x: number, y: number }
+
+let img = Input0;
+let w = img.width;
+let h = img.height;
+let rot_center = Point {
+    x: w / 2,
+    y: h / 2,
+};
+
+let angleDeg = number::mod(Input1, 360);
+let angle = -number::degToRad(angleDeg);
+let m0 = number::cos(angle);
+let m1 = number::sin(angle);
+let m2 = rot_center.x + m0 * -rot_center.x + m1 * -rot_center.y;
+let m3 = -number::sin(angle);
+let m4 = number::cos(angle);
+let m5 = rot_center.y + m3 * -rot_center.x + m4 * -rot_center.y;
+
+def transform(x: number, y: number) {
+    Point {
+        x: m0 * x + m1 * y + m2,
+        y: m3 * x + m4 * y + m5,
+    }
+}
+
+let p0 = transform(0, 0);
+let p1 = transform(w, 0);
+let p2 = transform(w, h);
+let p3 = transform(0, h);
+
+let expandWidth = Image.width & (
+    ceil(max(p0.x, p1.x, p2.x, p3.x))
+    - floor(min(p0.x, p1.x, p2.x, p3.x))
+);
+let expandHeight = Image.height & (
+    ceil(max(p0.y, p1.y, p2.y, p3.y))
+    - floor(min(p0.y, p1.y, p2.y, p3.y))
+);
+
+struct Size { w: number, h: number }
+let imgSize = Size { w: w, h: h };
+let transformedSize = match Input3 {
+    RotateSizeChange::Crop => imgSize,
+    RotateSizeChange::Expand => Size { w: expandWidth, h: expandHeight },
+};
+
+// account for fast paths
+let size = match angleDeg {
+    0 | 180 | 360 => imgSize,
+    90 | 270 => if bool::or(Input3 == RotateSizeChange::Expand, w == h) {
+        Size { w: h, h: w }
+    } else {
+        transformedSize
+    },
+    _ => transformedSize,
+};
+
+Image {
+    width: size.w,
+    height: size.h,
+    channels: FillColor::getOutputChannels(Input4, img.channels)
+}
+---
 `
     .split(/^-{3,}$/m)
     .map((l) => l.trim())

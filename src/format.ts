@@ -111,8 +111,21 @@ const formatExpression = (expr: Expression): string => {
             }
             const arms = expr.arms
                 .map((a) => {
-                    // TODO:
-                    return a.toString() + ',';
+                    const pattern = a.pattern.type === 'any' ? '_' : format(a.pattern);
+                    const binding = a.binding === undefined ? '' : `as ${a.binding} `;
+                    let to = format(a.to);
+                    if (!isMultiline(to)) {
+                        const single = `${pattern} ${binding}=> ${to},`;
+                        if (single.length <= MAX_EXPRESSION_LENGTH) {
+                            return single;
+                        }
+                    }
+                    const allowed =
+                        (a.to.underlying === 'struct' && a.to.type === 'instance') ||
+                        (a.to.underlying === 'expression' &&
+                            (a.to.type === 'struct' || a.to.type === 'scope'));
+                    if (!allowed) to = `{\n${indent(to)}\n}`;
+                    return `${pattern} ${binding}=> ${to},`;
                 })
                 .join('\n');
             return `${pre} {\n${indent(arms)}\n}`;
