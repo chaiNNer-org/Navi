@@ -61,10 +61,10 @@ ifExpression:
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 
-negateExpression: OpMinus? fieldAccessExpression;
+unaryExpression: (OpMinus | Not)? fieldAccessExpression;
 
 multiplicativeExpression:
-	negateExpression ((OpMult | OpDiv) negateExpression)*;
+	unaryExpression ((OpMult | OpDiv) unaryExpression)*;
 
 additiveExpression:
 	multiplicativeExpression (
@@ -82,7 +82,13 @@ comparisonExpression:
 		(OpEqual | OpNotEqual | OpGt | OpGte | OpLt | OpLte) unionExpression
 	)?;
 
-expression: comparisonExpression;
+logicalAndExpression:
+	comparisonExpression (And comparisonExpression)*;
+
+logicalOrExpression:
+	logicalAndExpression (Or logicalAndExpression)*;
+
+expression: logicalOrExpression;
 
 // misc
 args: (expression (',' expression)* ','?)?;
@@ -106,18 +112,22 @@ parameter: Identifier assert;
 varArgParameter: OpSpread Identifier assert;
 assert: ':' expression;
 
-name: Identifier ('::' Identifier)*;
+contextualKeyword: And | Or | Not;
+name: Identifier ('::' (Identifier | contextualKeyword))*;
 
 // keywords
+And: 'and';
 As: 'as';
 Def: 'def';
+Else: 'else';
+Enum: 'enum';
+If: 'if';
+Intrinsic: 'intrinsic';
 Let: 'let';
 Match: 'match';
-If: 'if';
-Else: 'else';
+Not: 'not';
+Or: 'or';
 Struct: 'struct';
-Enum: 'enum';
-Intrinsic: 'intrinsic';
 // reserved
 Self: 'self';
 Trait: 'trait';

@@ -136,6 +136,7 @@ const expressionSnippets: string[] = [
     String.raw`a.b.c.d.e.f`,
     String.raw`foo::bar.baz`,
     String.raw`foo { foo: uint }.foo`,
+    String.raw`a::and::or::not::b.c`,
 
     // intersection and union
     String.raw`a | b | c | d`,
@@ -162,6 +163,12 @@ const expressionSnippets: string[] = [
     String.raw`a + b * c`,
     String.raw`-100 - -100`,
     String.raw`a---100`,
+
+    // logical
+    String.raw`not a and b or c`,
+    String.raw`a and b or c`,
+    String.raw`bool::and(a, b or c)`,
+    String.raw`a::and and b::or or c::not`,
 
     // scope
     String.raw`{ 0 }`,
@@ -299,6 +306,11 @@ const invalidExpressionSnippets: string[] = [
     String.raw`a++a`,
     String.raw`a**a`,
     String.raw`a-100`,
+
+    // logical
+    String.raw`not not a`,
+    String.raw`not and a`,
+    String.raw`and and b`,
 
     // definitions
 

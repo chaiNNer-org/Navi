@@ -310,9 +310,25 @@ class AstConverter {
     }
 
     private getName(name: Contexts['NameContext']): string {
-        return getMultipleTokens(name, 'Identifier')
-            .map((id) => id.getText())
-            .join('::');
+        const identifiers = getMultipleTokens(name, 'Identifier');
+        const contextual = getMultiple(name, 'contextualKeyword');
+        if (contextual.length === 0) {
+            return identifiers.map((id) => id.getText()).join('::');
+        }
+
+        interface T {
+            pos: number;
+            text: string;
+        }
+        const tokens: T[] = [
+            ...identifiers.map((t): T => ({ pos: t.getPayload().start, text: t.getText() })),
+            ...contextual.map((c): T => {
+                const t = c.start;
+                return { pos: t.start, text: t.text };
+            }),
+        ];
+        tokens.sort((a, b) => a.pos - b.pos);
+        return tokens.map((t) => t.text).join('::');
     }
 
     toExpression = (
@@ -332,12 +348,14 @@ class AstConverter {
         context:
             | Contexts['ExpressionDocumentContext']
             | Contexts['ExpressionContext']
+            | Contexts['LogicalOrExpressionContext']
+            | Contexts['LogicalAndExpressionContext']
             | Contexts['ComparisonExpressionContext']
             | Contexts['UnionExpressionContext']
             | Contexts['IntersectionExpressionContext']
             | Contexts['AdditiveExpressionContext']
             | Contexts['MultiplicativeExpressionContext']
-            | Contexts['NegateExpressionContext']
+            | Contexts['UnaryExpressionContext']
             | Contexts['FieldAccessExpressionContext']
             | Contexts['PrimaryExpressionContext']
             | Contexts['FunctionCallContext']
@@ -357,7 +375,17 @@ class AstConverter {
             return new ScopeExpression(definitions, expression);
         }
         if (context instanceof NaviParser.ExpressionContext) {
-            return this.toExpression(getRequired(context, 'comparisonExpression'));
+            return this.toExpression(getRequired(context, 'logicalOrExpression'));
+        }
+        if (context instanceof NaviParser.LogicalOrExpressionContext) {
+            const items = getMultiple(context, 'logicalAndExpression').map(this.toExpression);
+            if (items.length === 1) return items[0];
+            return new FunctionCallExpression('bool::or', items);
+        }
+        if (context instanceof NaviParser.LogicalAndExpressionContext) {
+            const items = getMultiple(context, 'comparisonExpression').map(this.toExpression);
+            if (items.length === 1) return items[0];
+            return new FunctionCallExpression('bool::and', items);
         }
         if (context instanceof NaviParser.ComparisonExpressionContext) {
             const items = getMultiple(context, 'unionExpression').map(this.toExpression);
@@ -403,7 +431,7 @@ class AstConverter {
             );
         }
         if (context instanceof NaviParser.MultiplicativeExpressionContext) {
-            const exprs = getMultiple(context, 'negateExpression').map(this.toExpression);
+            const exprs = getMultiple(context, 'unaryExpression').map(this.toExpression);
             if (exprs.length === 1) return exprs[0];
             const operators = getOperatorsInOrder(context, ['OpDiv', 'OpMult']);
             return new FunctionCallExpression(
@@ -417,10 +445,15 @@ class AstConverter {
                 })
             );
         }
-        if (context instanceof NaviParser.NegateExpressionContext) {
+        if (context instanceof NaviParser.UnaryExpressionContext) {
             const expr = this.toExpression(getRequired(context, 'fieldAccessExpression'));
-            if (!getOptionalToken(context, 'OpMinus')) return expr;
-            return new FunctionCallExpression('number::neg', [expr]);
+            if (getOptionalToken(context, 'OpMinus')) {
+                return new FunctionCallExpression('number::neg', [expr]);
+            }
+            if (getOptionalToken(context, 'Not')) {
+                return new FunctionCallExpression('bool::not', [expr]);
+            }
+            return expr;
         }
         if (context instanceof NaviParser.FieldAccessExpressionContext) {
             const ofExpression = this.toExpression(getRequired(context, 'primaryExpression'));
