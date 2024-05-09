@@ -176,12 +176,12 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by NaviParser#unaryExpression.
-	enterUnaryExpression(ctx) {
+	// Enter a parse tree produced by NaviParser#negateExpression.
+	enterNegateExpression(ctx) {
 	}
 
-	// Exit a parse tree produced by NaviParser#unaryExpression.
-	exitUnaryExpression(ctx) {
+	// Exit a parse tree produced by NaviParser#negateExpression.
+	exitNegateExpression(ctx) {
 	}
 
 
@@ -227,6 +227,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by NaviParser#comparisonExpression.
 	exitComparisonExpression(ctx) {
+	}
+
+
+	// Enter a parse tree produced by NaviParser#logicalNotExpression.
+	enterLogicalNotExpression(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#logicalNotExpression.
+	exitLogicalNotExpression(ctx) {
 	}
 
 
