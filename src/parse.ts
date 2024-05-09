@@ -271,6 +271,7 @@ class AstConverter {
             | Contexts['VariableDefinitionContext']
             | Contexts['FunctionDefinitionContext']
             | Contexts['IntrinsicFunctionDeclarationContext']
+            | Contexts['FieldMaybeAssertContext']
     ): Expression | undefined {
         const assert = getOptional(context, 'assert');
         if (assert === undefined) return undefined;
@@ -282,6 +283,15 @@ class AstConverter {
     ): (readonly [name: string, expressions: Expression])[] {
         return getMultiple(args, 'field').map((f) => {
             return [getRequiredToken(f, 'Identifier').getText(), this.getAssert(f)] as const;
+        });
+    }
+    private fieldsSpreadToList(
+        args: Contexts['FieldsSpreadContext']
+    ): (readonly [name: string, expressions: Expression])[] {
+        return getMultiple(args, 'fieldMaybeAssert').map((f) => {
+            const name = getRequiredToken(f, 'Identifier').getText();
+            const assert = this.getOptionalAssert(f) ?? new NamedExpression(name);
+            return [name, assert] as const;
         });
     }
 
@@ -504,7 +514,7 @@ class AstConverter {
             return new StructExpression(
                 name,
                 spread,
-                this.fieldsToList(fields).map(
+                this.fieldsSpreadToList(fields).map(
                     ([fieldName, e]) => new StructExpressionField(fieldName, e)
                 )
             );

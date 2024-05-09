@@ -272,6 +272,9 @@ Image { ...i }
 >>> Image { ...i, ...j }
 Image { ...i, ...j }
 
+>>> Image { width, height, channels: 3 }
+Image { width: width, height: height, channels: 3 }
+
 >>> match never {}
 match never {  }
 
