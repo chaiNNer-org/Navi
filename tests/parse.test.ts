@@ -111,6 +111,7 @@ const expressionSnippets: string[] = [
     String.raw`Image { .....3 }`,
     String.raw`Image { ...i , }`,
     String.raw`Image { ...i, ...j }`,
+    String.raw`Image { width, height, channels: 3 }`,
 
     // match
     String.raw`match never {}`,

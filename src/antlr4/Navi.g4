@@ -95,11 +95,14 @@ args: (expression (',' expression)* ','?)?;
 fields: '{' (field (',' field)* ','?)? '}';
 fieldsSpread:
 	'{' (
-		spread (',' spread)* (',' (field (',' field)* ','?)?)?
-		| (field (',' field)* ','?)?
+		spread (',' spread)* (
+			',' (fieldMaybeAssert (',' fieldMaybeAssert)* ','?)?
+		)?
+		| (fieldMaybeAssert (',' fieldMaybeAssert)* ','?)?
 	) '}';
 spread: OpSpread expression;
 field: Identifier assert;
+fieldMaybeAssert: Identifier assert?;
 parameters: '(' (parameter (',' parameter)* ','?)? ')';
 varArgParameters:
 	'(' (

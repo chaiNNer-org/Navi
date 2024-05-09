@@ -302,6 +302,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#fieldMaybeAssert.
+	enterFieldMaybeAssert(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#fieldMaybeAssert.
+	exitFieldMaybeAssert(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#parameters.
 	enterParameters(ctx) {
 	}
