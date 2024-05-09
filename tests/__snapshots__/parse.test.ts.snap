@@ -873,7 +873,7 @@ exports[`Parse complex expressions 1`] = `
 >>> 1 != 2
 {
     def any::neq(a: any, b: any): bool {
-        any::eq(bool::not(a), b)
+        bool::not(any::eq(a, b))
     }
     any::neq(1, 2)
 }
