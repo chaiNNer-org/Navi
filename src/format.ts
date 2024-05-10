@@ -3,7 +3,7 @@ import { Type } from './types';
 import { isSameType } from './types-util';
 import { assertNever } from './util';
 
-const MAX_EXPRESSION_LENGTH = 80;
+const MAX_EXPRESSION_LENGTH = 60;
 const INDENT = '    ';
 
 const isMultiline = (s: string): boolean => s.includes('\n');
@@ -25,6 +25,19 @@ const bracketFormat = (expression: Expression): string => {
     return formatted;
 };
 
+const isIndentedExpression = (s: string): boolean => {
+    if (!/\n[)}]+$/.test(s)) {
+        return false;
+    }
+    const lines = s.split('\n');
+    if (lines.length < 3) {
+        return false;
+    }
+    const innerLines = lines.slice(1, -1);
+    return innerLines.every((line) => line === '' || line.startsWith(INDENT));
+};
+const getFirstLine = (s: string): string => s.split('\n')[0];
+
 const formatIntersectionOrUnion = (
     items: readonly Expression[],
     type: 'intersection' | 'union'
@@ -45,7 +58,9 @@ const formatIntersectionOrUnion = (
             return singleLine;
         }
     }
-    return formattedItems.join(`\n  ${delimiter} `);
+    return formattedItems
+        .map((f, i) => (i == 0 ? f : indent(f).trimStart()))
+        .join(`\n  ${delimiter} `);
 };
 
 const formatDefinition = (def: Definition): string => {
@@ -67,7 +82,7 @@ const formatDefinition = (def: Definition): string => {
             }
             const fields = def.fields.map((f) => {
                 let type = format(f.type);
-                if (isMultiline(type)) {
+                if (isMultiline(type) && !isIndentedExpression(type)) {
                     type = indent(type).trimStart();
                 }
                 return f.name + ': ' + type + ',';
@@ -97,8 +112,40 @@ const formatExpression = (expr: Expression): string => {
             return `${bracketFormat(expr.of)}.${expr.field}`;
         }
         case 'function-call': {
-            // TODO: multiline
-            return `${expr.functionName}(${expr.args.map((e) => format(e)).join(', ')})`;
+            if (expr.args.length === 0) {
+                return `${expr.functionName}()`;
+            }
+
+            const args = expr.args.map((a) => format(a));
+            if (!args.some(isMultiline)) {
+                const singleLine = `${expr.functionName}(${args.join(', ')})`;
+                if (singleLine.length <= MAX_EXPRESSION_LENGTH) {
+                    return singleLine;
+                }
+            }
+
+            const prevArgs = args.slice(0, -1);
+            const lastArg = args[args.length - 1];
+            const onlyLastArgIsMultiline =
+                isMultiline(lastArg) && prevArgs.every((a) => !isMultiline(a));
+            if (
+                onlyLastArgIsMultiline &&
+                expr.functionName.length + prevArgs.join(', ').length <= MAX_EXPRESSION_LENGTH
+            ) {
+                const pre = `${expr.functionName}(${prevArgs.map((a) => a + ', ').join('')}`;
+                if (
+                    isIndentedExpression(lastArg) &&
+                    pre.length + getFirstLine(lastArg).length <= MAX_EXPRESSION_LENGTH
+                ) {
+                    return `${pre}${lastArg})`;
+                }
+            }
+
+            if (args.length === 1) {
+                return `${expr.functionName}(\n${indent(args[0])}\n)`;
+            }
+
+            return `${expr.functionName}(\n${args.map((a) => indent(a + ',')).join('\n')}\n)`;
         }
         case 'intersection':
         case 'union': {
@@ -113,19 +160,22 @@ const formatExpression = (expr: Expression): string => {
                 .map((a) => {
                     const pattern = a.pattern.type === 'any' ? '_' : format(a.pattern);
                     const binding = a.binding === undefined ? '' : `as ${a.binding} `;
+                    const pre = `${pattern} ${binding}=> `;
+
                     let to = format(a.to);
                     if (!isMultiline(to)) {
-                        const single = `${pattern} ${binding}=> ${to},`;
+                        const single = `${pre}${to},`;
                         if (single.length <= MAX_EXPRESSION_LENGTH) {
                             return single;
                         }
                     }
-                    const allowed =
-                        (a.to.underlying === 'struct' && a.to.type === 'instance') ||
-                        (a.to.underlying === 'expression' &&
-                            (a.to.type === 'struct' || a.to.type === 'scope'));
-                    if (!allowed) to = `{\n${indent(to)}\n}`;
-                    return `${pattern} ${binding}=> ${to},`;
+                    if (
+                        !isIndentedExpression(to) ||
+                        pre.length + getFirstLine(to).length > MAX_EXPRESSION_LENGTH
+                    ) {
+                        to = `{\n${indent(to)}\n}`;
+                    }
+                    return `${pre}${to},`;
                 })
                 .join('\n');
             return `${pre} {\n${indent(arms)}\n}`;
@@ -141,7 +191,7 @@ const formatExpression = (expr: Expression): string => {
             const spread = expr.spread.map((s) => '...' + bracketFormat(s));
             const fields = expr.fields.map((f) => {
                 let type = format(f.type);
-                if (isMultiline(type)) {
+                if (isMultiline(type) && !isIndentedExpression(type)) {
                     type = indent(type).trimStart();
                 }
                 return f.name + ': ' + type;
@@ -192,7 +242,7 @@ const formatType = (type: Type): string => {
 
             const fields = type.fields.map((f, i) => {
                 let type = format(f);
-                if (isMultiline(type)) {
+                if (isMultiline(type) && !isIndentedExpression(type)) {
                     type = indent(type).trimStart();
                 }
                 return fieldInfo[i].name + ': ' + type;

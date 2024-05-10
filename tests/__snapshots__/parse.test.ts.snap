@@ -249,7 +249,12 @@ foo { foo: uint }
 Image { width: uint, height: uint, channels: int(1..inf) }
 
 >>> bar { any: any, never: never, number: number, string: string }
-bar { any: any, never: never, number: number, string: string }
+bar {
+    any: any,
+    never: never,
+    number: number,
+    string: string,
+}
 
 >>> foo::bar::baz
 foo::bar::baz
@@ -371,11 +376,9 @@ match a {
 >>> if a { 1 } else if b { 2 } else { 3}
 match a {
     true => 1,
-    false => {
-        match b {
-            true => 2,
-            false => 3,
-        }
+    false => match b {
+        true => 2,
+        false => 3,
     },
 }
 
@@ -434,7 +437,11 @@ number::add(a, b, number::neg(c), d, number::neg(e), f)
 number::mul(a, b, number::rec(c), d, number::rec(e), f)
 
 >>> a * (-b+c) / -2
-number::mul(a, number::add(number::neg(b), c), number::rec(-2))
+number::mul(
+    a,
+    number::add(number::neg(b), c),
+    number::rec(-2),
+)
 
 >>> -a--b
 number::add(number::neg(a), number::neg(number::neg(b)))
@@ -550,7 +557,10 @@ bool::not(any::eq(number::mul(a, b), c))
 
 >>> enum Direction { North, East, South, West } Direction
 {
-    let Direction = Direction::North | Direction::East | Direction::South | Direction::West;
+    let Direction = Direction::North
+      | Direction::East
+      | Direction::South
+      | Direction::West;
     struct Direction::North;
     struct Direction::East;
     struct Direction::South;
@@ -951,11 +961,19 @@ exports[`Parse complex expressions 1`] = `
     let height = Input4;
     match mode {
         ImageResizeMode::Percentage as mode => Image {
-            width: max(1, int & round(number::mul(i.width, scale, number::rec(100)))),
-            height: max(1, int & round(number::mul(i.height, scale, number::rec(100)))),
+            width: max(
+                1,
+                int & round(number::mul(i.width, scale, number::rec(100))),
+            ),
+            height: max(
+                1,
+                int & round(number::mul(i.height, scale, number::rec(100))),
+            ),
             channels: i.channels,
         },
-        ImageResizeMode::Absolute as mode => Image { width: width, height: height, channels: i.channels },
+        ImageResizeMode::Absolute as mode => {
+            Image { width: width, height: height, channels: i.channels }
+        },
     }
 }
 
@@ -1022,36 +1040,52 @@ exports[`Parse complex expressions 1`] = `
     def compareCondition(b: uint): bool {
         match condition {
             ResizeCondition::Both as condition => false,
-            ResizeCondition::Downscale as condition => number::gt(target, b),
-            ResizeCondition::Upscale as condition => number::lt(target, b),
+            ResizeCondition::Downscale as condition => {
+                number::gt(target, b)
+            },
+            ResizeCondition::Upscale as condition => {
+                number::lt(target, b)
+            },
         }
     }
     let same = Size { width: w, height: h };
     let outSize = match side {
-        SideSelection::Width as side => {
-            match compareCondition(w) {
-                true => same,
-                false => Size {
-                    width: target,
-                    height: max(round(number::mul(number::mul(target, number::rec(w)), h)), 1),
-                },
-            }
+        SideSelection::Width as side => match compareCondition(w) {
+            true => same,
+            false => Size {
+                width: target,
+                height: max(
+                    round(number::mul(number::mul(target, number::rec(w)), h)),
+                    1,
+                ),
+            },
         },
-        SideSelection::Height as side => {
-            match compareCondition(h) {
-                true => same,
-                false => Size {
-                    width: max(round(number::mul(number::mul(target, number::rec(h)), w)), 1),
-                    height: target,
-                },
-            }
+        SideSelection::Height as side => match compareCondition(h) {
+            true => same,
+            false => Size {
+                width: max(
+                    round(number::mul(number::mul(target, number::rec(h)), w)),
+                    1,
+                ),
+                height: target,
+            },
         },
         SideSelection::ShorterSide as side => {
             match compareCondition(min(h, w)) {
                 true => same,
                 false => Size {
-                    width: max(round(number::mul(number::mul(target, number::rec(min(h, w))), w)), 1),
-                    height: max(round(number::mul(number::mul(target, number::rec(min(h, w))), h)), 1),
+                    width: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(min(h, w))), w)
+                        ),
+                        1,
+                    ),
+                    height: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(min(h, w))), h)
+                        ),
+                        1,
+                    ),
                 },
             }
         },
@@ -1059,8 +1093,18 @@ exports[`Parse complex expressions 1`] = `
             match compareCondition(max(h, w)) {
                 true => same,
                 false => Size {
-                    width: max(round(number::mul(number::mul(target, number::rec(max(h, w))), w)), 1),
-                    height: max(round(number::mul(number::mul(target, number::rec(max(h, w))), h)), 1),
+                    width: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(max(h, w))), w)
+                        ),
+                        1,
+                    ),
+                    height: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(max(h, w))), h)
+                        ),
+                        1,
+                    ),
                 },
             }
         },
@@ -1146,15 +1190,26 @@ exports[`Parse complex expressions 1`] = `
     let img = Input0;
     let w = img.width;
     let h = img.height;
-    let rot_center = Point { x: number::mul(w, number::rec(2)), y: number::mul(h, number::rec(2)) };
+    let rot_center = Point {
+        x: number::mul(w, number::rec(2)),
+        y: number::mul(h, number::rec(2)),
+    };
     let angleDeg = number::mod(Input1, 360);
     let angle = number::neg(number::degToRad(angleDeg));
     let m0 = number::cos(angle);
     let m1 = number::sin(angle);
-    let m2 = number::add(rot_center.x, number::mul(m0, number::neg(rot_center.x)), number::mul(m1, number::neg(rot_center.y)));
+    let m2 = number::add(
+        rot_center.x,
+        number::mul(m0, number::neg(rot_center.x)),
+        number::mul(m1, number::neg(rot_center.y)),
+    );
     let m3 = number::neg(number::sin(angle));
     let m4 = number::cos(angle);
-    let m5 = number::add(rot_center.y, number::mul(m3, number::neg(rot_center.x)), number::mul(m4, number::neg(rot_center.y)));
+    let m5 = number::add(
+        rot_center.y,
+        number::mul(m3, number::neg(rot_center.x)),
+        number::mul(m4, number::neg(rot_center.y)),
+    );
     def transform(x: number, y: number) {
         Point {
             x: number::add(number::mul(m0, x), number::mul(m1, y), m2),
@@ -1166,9 +1221,15 @@ exports[`Parse complex expressions 1`] = `
     let p2 = transform(w, h);
     let p3 = transform(0, h);
     let expandWidth = Image.width
-      & number::add(ceil(max(p0.x, p1.x, p2.x, p3.x)), number::neg(floor(min(p0.x, p1.x, p2.x, p3.x))));
+      & number::add(
+            ceil(max(p0.x, p1.x, p2.x, p3.x)),
+            number::neg(floor(min(p0.x, p1.x, p2.x, p3.x))),
+        );
     let expandHeight = Image.height
-      & number::add(ceil(max(p0.y, p1.y, p2.y, p3.y)), number::neg(floor(min(p0.y, p1.y, p2.y, p3.y))));
+      & number::add(
+            ceil(max(p0.y, p1.y, p2.y, p3.y)),
+            number::neg(floor(min(p0.y, p1.y, p2.y, p3.y))),
+        );
     struct Size {
         w: number,
         h: number,
@@ -1176,12 +1237,17 @@ exports[`Parse complex expressions 1`] = `
     let imgSize = Size { w: w, h: h };
     let transformedSize = match Input3 {
         RotateSizeChange::Crop as Input3 => imgSize,
-        RotateSizeChange::Expand as Input3 => Size { w: expandWidth, h: expandHeight },
+        RotateSizeChange::Expand as Input3 => {
+            Size { w: expandWidth, h: expandHeight }
+        },
     };
     let size = match angleDeg {
         0 | 180 | 360 as angleDeg => imgSize,
         90 | 270 as angleDeg => {
-            match bool::or(any::eq(Input3, RotateSizeChange::Expand), any::eq(w, h)) {
+            match bool::or(
+                any::eq(Input3, RotateSizeChange::Expand),
+                any::eq(w, h),
+            ) {
                 true => Size { w: h, h: w },
                 false => transformedSize,
             }
@@ -1192,6 +1258,77 @@ exports[`Parse complex expressions 1`] = `
         width: size.w,
         height: size.h,
         channels: FillColor::getOutputChannels(Input4, img.channels),
+    }
+}
+
+>>> struct Foo {
+>>>     someLongName: Bar {
+>>>         a: number | str | null,
+>>>         b: number | str | Baz { a: number },
+>>>         c: number,
+>>>         d: uint,
+>>>         e: number,
+>>>         f: str
+>>>     }
+>>> }
+>>> Foo {
+>>>     someLongName: Bar {
+>>>         a: (x*(-y)+z)/(w*w),
+>>>         b: max(0, x*y*z/(-w))
+>>>     }
+>>> }
+{
+    struct Foo {
+        someLongName: Bar {
+            a: number | str | null,
+            b: number | str | Baz { a: number },
+            c: number,
+            d: uint,
+            e: number,
+            f: str,
+        },
+    }
+    Foo {
+        someLongName: Bar {
+            a: number::mul(
+                number::add(number::mul(x, number::neg(y)), z),
+                number::rec(number::mul(w, w)),
+            ),
+            b: max(0, number::mul(x, y, z, number::rec(number::neg(w)))),
+        },
+    }
+}
+
+>>> let image = Input0;
+>>> let coords = Input3;
+>>> let x = Input1;
+>>> let y = Input2;
+>>>
+>>> let valid = match coords {
+>>>     CoordinateType::Relative => true,
+>>>     CoordinateType::Absolute => bool::and(x < image.width, y < image.height),
+>>> };
+>>>
+>>> if valid {
+>>>     Color { channels: Input0.channels }
+>>> } else {
+>>>     never
+>>> }
+{
+    let image = Input0;
+    let coords = Input3;
+    let x = Input1;
+    let y = Input2;
+    let valid = match coords {
+        CoordinateType::Relative as coords => true,
+        CoordinateType::Absolute as coords => bool::and(
+            number::lt(x, image.width),
+            number::lt(y, image.height),
+        ),
+    };
+    match valid {
+        true => Color { channels: Input0.channels },
+        false => never,
     }
 }"
 `;

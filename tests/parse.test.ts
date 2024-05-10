@@ -526,6 +526,41 @@ Image {
     channels: FillColor::getOutputChannels(Input4, img.channels)
 }
 ---
+
+struct Foo {
+    someLongName: Bar {
+        a: number | str | null,
+        b: number | str | Baz { a: number },
+        c: number,
+        d: uint,
+        e: number,
+        f: str
+    }
+}
+Foo {
+    someLongName: Bar {
+        a: (x*(-y)+z)/(w*w),
+        b: max(0, x*y*z/(-w))
+    }
+}
+---
+
+let image = Input0;
+let coords = Input3;
+let x = Input1;
+let y = Input2;
+
+let valid = match coords {
+    CoordinateType::Relative => true,
+    CoordinateType::Absolute => bool::and(x < image.width, y < image.height),
+};
+
+if valid {
+    Color { channels: Input0.channels }
+} else {
+    never
+}
+---
 `
     .split(/^-{3,}$/m)
     .map((l) => l.trim())
