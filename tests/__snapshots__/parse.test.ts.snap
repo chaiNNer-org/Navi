@@ -2,7 +2,7 @@
 
 exports[`Expression parsing 1`] = `
 ">>> /* some comment */ 0 // another comment
-    // and another
+>>>     // and another
 0
 
 >>> 0
@@ -237,7 +237,7 @@ null
 foo
 
 >>> foo {}
-foo {}
+foo
 
 >>> foo { foo: 3 }
 foo { foo: 3 }
@@ -249,13 +249,18 @@ foo { foo: uint }
 Image { width: uint, height: uint, channels: int(1..inf) }
 
 >>> bar { any: any, never: never, number: number, string: string }
-bar { any: any, never: never, number: number, string: string }
+bar {
+    any: any,
+    never: never,
+    number: number,
+    string: string,
+}
 
 >>> foo::bar::baz
 foo::bar::baz
 
 >>> foo::bar::baz {}
-foo::bar::baz {}
+foo::bar::baz
 
 >>> Image { ...never }
 Image { ...never }
@@ -276,52 +281,106 @@ Image { ...i, ...j }
 Image { width: width, height: height, channels: 3 }
 
 >>> match never {}
-match never {  }
+match never {}
 
 >>> match (a) {}
-match a {  }
+match a {}
 
 >>> match a|b {}
-match a | b {  }
+match (a | b) {}
 
 >>> match a {}
-match a {  }
+match a {}
 
 >>> match a {} {}
-match a {} {  }
+match a {}
 
 >>> match a { foo: uint } { number => 1 }
-match a { foo: uint } { number => 1 }
+match a { foo: uint } {
+    number => 1,
+}
 
 >>> match a { number => 1, }
-match a { number as a => 1 }
+match a {
+    number as a => 1,
+}
 
 >>> match a { number => 1, string => 2, any => 5 }
-match a { number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a { number => 1, string => 2, _ => 5 }
-match a { number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a { _ => 234, number => 1, string => 2, _ => 5 }
-match a { _ as a => 234, number as a => 1, string as a => 2, _ as a => 5 }
+match a {
+    _ as a => 234,
+    number as a => 1,
+    string as a => 2,
+    _ as a => 5,
+}
 
 >>> match a {  number as foo => add(foo, 1), _ as foo => foo, }
-match a { number as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, _ as __temp => { let a = __temp; let foo = __temp; foo } }
+match a {
+    number as __temp => {
+        let a = __temp;
+        let foo = __temp;
+        add(foo, 1)
+    },
+    _ as __temp => {
+        let a = __temp;
+        let foo = __temp;
+        foo
+    },
+}
 
 >>> match a { 1 | 2 as foo => add(foo, 1), "bar" => "baz", _ as foo => foo, }
-match a { 1 | 2 as __temp => { let a = __temp; let foo = __temp; add(foo, 1) }, "bar" as a => "baz", _ as __temp => { let a = __temp; let foo = __temp; foo } }
+match a {
+    1 | 2 as __temp => {
+        let a = __temp;
+        let foo = __temp;
+        add(foo, 1)
+    },
+    "bar" as a => "baz",
+    _ as __temp => {
+        let a = __temp;
+        let foo = __temp;
+        foo
+    },
+}
 
 >>> match a { foo::bar => baz, }
-match a { foo::bar as a => baz }
+match a {
+    foo::bar as a => baz,
+}
 
 >>> if a { 1 } else { 2 }
-match a { true => 1, false => 2 }
+match a {
+    true => 1,
+    false => 2,
+}
 
 >>> if (a) { 1 } else { 2 }
-match a { true => 1, false => 2 }
+match a {
+    true => 1,
+    false => 2,
+}
 
 >>> if a { 1 } else if b { 2 } else { 3}
-match a { true => 1, false => match b { true => 2, false => 3 } }
+match a {
+    true => 1,
+    false => match b {
+        true => 2,
+        false => 3,
+    },
+}
 
 >>> a.b.c.d.e.f
 a.b.c.d.e.f
@@ -378,7 +437,11 @@ number::add(a, b, number::neg(c), d, number::neg(e), f)
 number::mul(a, b, number::rec(c), d, number::rec(e), f)
 
 >>> a * (-b+c) / -2
-number::mul(a, number::add(number::neg(b), c), number::rec(-2))
+number::mul(
+    a,
+    number::add(number::neg(b), c),
+    number::rec(-2),
+)
 
 >>> -a--b
 number::add(number::neg(a), number::neg(number::neg(b)))
@@ -417,62 +480,144 @@ bool::not(any::eq(number::mul(a, b), c))
 0
 
 >>> { let foo = 0; foo }
-{ let foo = 0; foo }
+{
+    let foo = 0;
+    foo
+}
 
 >>> { def getFoo() = 0; getFoo() }
-{ def getFoo() = 0; getFoo() }
+{
+    def getFoo() {
+        0
+    }
+    getFoo()
+}
 
 >>> { def getFoo() { 0 } getFoo() }
-{ def getFoo() = 0; getFoo() }
+{
+    def getFoo() {
+        0
+    }
+    getFoo()
+}
 
 >>> { struct Foo { bar: 0 } Foo.bar }
-{ struct Foo { bar: 0 } Foo.bar }
+{
+    struct Foo {
+        bar: 0,
+    }
+    Foo.bar
+}
 
 >>> struct false; false
-{ struct false; false }
+{
+    struct false;
+    false
+}
 
 >>> struct Image { width: uint, height: uint, channels: int(1..) } Image
-{ struct Image { width: uint, height: uint, channels: int(1..inf) } Image }
+{
+    struct Image {
+        width: uint,
+        height: uint,
+        channels: int(1..inf),
+    }
+    Image
+}
 
 >>> struct foo::bar; foo::bar
-{ struct foo::bar; foo::bar }
+{
+    struct foo::bar;
+    foo::bar
+}
 
 >>> let bool = true | false; bool
-{ let bool = true | false; bool }
+{
+    let bool = true | false;
+    bool
+}
 
 >>> let std::bool = true | false; std::bool
-{ let std::bool = true | false; std::bool }
+{
+    let std::bool = true | false;
+    std::bool
+}
 
 >>> let a: int = 0; a
-{ let a: int = 0; a }
+{
+    let a: int = 0;
+    a
+}
 
 >>> let a: any = 0; a
-{ let a = 0; a }
+{
+    let a = 0;
+    a
+}
 
 >>> enum Direction { North, East, South, West } Direction
-{ let Direction = Direction::North | Direction::East | Direction::South | Direction::West; struct Direction::North; struct Direction::East; struct Direction::South; struct Direction::West; Direction }
+{
+    let Direction = Direction::North
+      | Direction::East
+      | Direction::South
+      | Direction::West;
+    struct Direction::North;
+    struct Direction::East;
+    struct Direction::South;
+    struct Direction::West;
+    Direction
+}
 
 >>> enum Empty { } Empty
-{ let Empty = (never /* empty union */); Empty }
+{
+    let Empty = /* empty union */ never;
+    Empty
+}
 
 >>> def inc(a: number) = add(a, 1); inc(0)
-{ def inc(a: number) = add(a, 1); inc(0) }
+{
+    def inc(a: number) {
+        add(a, 1)
+    }
+    inc(0)
+}
 
 >>> def math :: inc(a: number) = add(a, 1); math::inc(0)
-{ def math::inc(a: number) = add(a, 1); math::inc(0) }
+{
+    def math::inc(a: number) {
+        add(a, 1)
+    }
+    math::inc(0)
+}
 
 >>> def foo(a: int): int = a; foo(int)
-{ def foo(a: int): int = a; foo(int) }
+{
+    def foo(a: int): int {
+        a
+    }
+    foo(int)
+}
 
 >>> def foo(a: int): int { a + 1 } foo(int)
-{ def foo(a: int): int = number::add(a, 1); foo(int) }
+{
+    def foo(a: int): int {
+        number::add(a, 1)
+    }
+    foo(int)
+}
 
 >>> def foo(a: uint): Image { width: uint } { let width = a + 1; Image { width: width } } foo(int)
-{ def foo(a: uint): Image { width: uint } { let width = number::add(a, 1); Image { width: width } } foo(int) }"
+{
+    def foo(a: uint): Image { width: uint } {
+        let width = number::add(a, 1);
+        Image { width: width }
+    }
+    foo(int)
+}"
 `;
 
 exports[`Invalid expression parsing 1`] = `
-">>> 
+">>>
 SyntaxError: At 1:0: mismatched input '<EOF>' expecting {'{', '(', 'def', 'enum', 'if', 'let', 'match', 'not', 'struct', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
 >>> öäü0
@@ -542,7 +687,7 @@ SyntaxError: At 1:2: token recognition error at: '"'
 SyntaxError: Bad escaped character in JSON at position 2
 
 >>> "
-    "
+>>>     "
 SyntaxError: At 1:0: token recognition error at: '"
 '
 
@@ -719,4 +864,471 @@ SyntaxError: At 1:38: no viable alternative at input ',S::'
 
 >>> def inc(a::b: number) = add(a, 1); inc(0)
 SyntaxError: At 1:9: mismatched input '::' expecting ':'"
+`;
+
+exports[`Parse complex expressions 1`] = `
+">>> def bool::not(value: bool): bool {
+>>>     match value {
+>>>         true => false,
+>>>         false => true
+>>>     }
+>>> }
+>>> not true
+{
+    def bool::not(value: bool): bool {
+        match value {
+            true as value => false,
+            false as value => true,
+        }
+    }
+    bool::not(true)
+}
+
+>>> def bool::not(value: bool): bool {
+>>>     if value { false } else { true }
+>>> }
+>>> not true
+{
+    def bool::not(value: bool): bool {
+        match value {
+            true => false,
+            false => true,
+        }
+    }
+    bool::not(true)
+}
+
+>>> def any::neq(a: any, b: any): bool {
+>>>     not a == b
+>>> }
+>>> 1 != 2
+{
+    def any::neq(a: any, b: any): bool {
+        bool::not(any::eq(a, b))
+    }
+    any::neq(1, 2)
+}
+
+>>> def string::includes(s: string, needle: string): bool {
+>>>     string::indexOf(s, needle) != nan
+>>> }
+>>> def string::startsWith(s: string, needle: string): bool {
+>>>     string::indexOf(s, needle) == 0
+>>> }
+>>> def string::endsWith(s: string, needle: string): bool {
+>>>     let l = string::len(needle);
+>>>     string::slice(s, -l, l) == needle
+>>> }
+>>> string::endsWith(s, "foo")
+{
+    def string::includes(s: string, needle: string): bool {
+        any::neq(string::indexOf(s, needle), nan)
+    }
+    def string::startsWith(s: string, needle: string): bool {
+        any::eq(string::indexOf(s, needle), 0)
+    }
+    def string::endsWith(s: string, needle: string): bool {
+        let l = string::len(needle);
+        any::eq(string::slice(s, number::neg(l), l), needle)
+    }
+    string::endsWith(s, "foo")
+}
+
+>>> let i = Input0;
+>>> let mode = Input1;
+>>>
+>>> let scale = Input2;
+>>> let width = Input3;
+>>> let height = Input4;
+>>>
+>>> match mode {
+>>>     ImageResizeMode::Percentage => Image {
+>>>         width: max(1, int & round(i.width * scale / 100)),
+>>>         height: max(1, int & round(i.height * scale / 100)),
+>>>         channels: i.channels,
+>>>     },
+>>>     ImageResizeMode::Absolute => Image {
+>>>         width: width,
+>>>         height: height,
+>>>         channels: i.channels,
+>>>     },
+>>> }
+{
+    let i = Input0;
+    let mode = Input1;
+    let scale = Input2;
+    let width = Input3;
+    let height = Input4;
+    match mode {
+        ImageResizeMode::Percentage as mode => Image {
+            width: max(
+                1,
+                int & round(number::mul(i.width, scale, number::rec(100))),
+            ),
+            height: max(
+                1,
+                int & round(number::mul(i.height, scale, number::rec(100))),
+            ),
+            channels: i.channels,
+        },
+        ImageResizeMode::Absolute as mode => {
+            Image { width: width, height: height, channels: i.channels }
+        },
+    }
+}
+
+>>> struct Size { width: uint, height: uint }
+>>>
+>>> let w = Input0.width;
+>>> let h = Input0.height;
+>>> let target = Input1;
+>>> let side = Input2;
+>>> let condition = Input4;
+>>>
+>>> def compareCondition(b: uint): bool {
+>>>     match condition {
+>>>         ResizeCondition::Both => false,
+>>>         ResizeCondition::Downscale => target > b,
+>>>         ResizeCondition::Upscale => target < b
+>>>     }
+>>> }
+>>>
+>>> let same = Size { width: w, height: h };
+>>>
+>>> let outSize = match side {
+>>>     SideSelection::Width => if compareCondition(w) { same } else {
+>>>         Size {
+>>>             width: target,
+>>>             height: max(round((target / w) * h), 1)
+>>>         }
+>>>     },
+>>>     SideSelection::Height => if compareCondition(h) { same } else {
+>>>         Size {
+>>>             width: max(round((target / h) * w), 1),
+>>>             height: target
+>>>         }
+>>>     },
+>>>     SideSelection::ShorterSide => if compareCondition(min(h, w)) { same } else {
+>>>         Size {
+>>>             width: max(round((target / min(h, w)) * w), 1),
+>>>             height: max(round((target / min(h, w)) * h), 1)
+>>>         }
+>>>     },
+>>>     SideSelection::LongerSide => if compareCondition(max(h, w)) { same } else {
+>>>         Size {
+>>>             width: max(round((target / max(h, w)) * w), 1),
+>>>             height: max(round((target / max(h, w)) * h), 1)
+>>>         }
+>>>     },
+>>> };
+>>>
+>>> Image {
+>>>     width: outSize.width,
+>>>     height: outSize.height,
+>>>     channels: Input0.channels
+>>> }
+{
+    struct Size {
+        width: uint,
+        height: uint,
+    }
+    let w = Input0.width;
+    let h = Input0.height;
+    let target = Input1;
+    let side = Input2;
+    let condition = Input4;
+    def compareCondition(b: uint): bool {
+        match condition {
+            ResizeCondition::Both as condition => false,
+            ResizeCondition::Downscale as condition => {
+                number::gt(target, b)
+            },
+            ResizeCondition::Upscale as condition => {
+                number::lt(target, b)
+            },
+        }
+    }
+    let same = Size { width: w, height: h };
+    let outSize = match side {
+        SideSelection::Width as side => match compareCondition(w) {
+            true => same,
+            false => Size {
+                width: target,
+                height: max(
+                    round(number::mul(number::mul(target, number::rec(w)), h)),
+                    1,
+                ),
+            },
+        },
+        SideSelection::Height as side => match compareCondition(h) {
+            true => same,
+            false => Size {
+                width: max(
+                    round(number::mul(number::mul(target, number::rec(h)), w)),
+                    1,
+                ),
+                height: target,
+            },
+        },
+        SideSelection::ShorterSide as side => {
+            match compareCondition(min(h, w)) {
+                true => same,
+                false => Size {
+                    width: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(min(h, w))), w)
+                        ),
+                        1,
+                    ),
+                    height: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(min(h, w))), h)
+                        ),
+                        1,
+                    ),
+                },
+            }
+        },
+        SideSelection::LongerSide as side => {
+            match compareCondition(max(h, w)) {
+                true => same,
+                false => Size {
+                    width: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(max(h, w))), w)
+                        ),
+                        1,
+                    ),
+                    height: max(
+                        round(
+                            number::mul(number::mul(target, number::rec(max(h, w))), h)
+                        ),
+                        1,
+                    ),
+                },
+            }
+        },
+    };
+    Image {
+        width: outSize.width,
+        height: outSize.height,
+        channels: Input0.channels,
+    }
+}
+
+>>> // This is a near verbatim copy of PIL's rotate code
+>>> // to get the size of the rotated image.
+>>> // https://pillow.readthedocs.io/en/stable/_modules/PIL/Image.html#Image.rotate
+>>> struct Point { x: number, y: number }
+>>>
+>>> let img = Input0;
+>>> let w = img.width;
+>>> let h = img.height;
+>>> let rot_center = Point {
+>>>     x: w / 2,
+>>>     y: h / 2,
+>>> };
+>>>
+>>> let angleDeg = number::mod(Input1, 360);
+>>> let angle = -number::degToRad(angleDeg);
+>>> let m0 = number::cos(angle);
+>>> let m1 = number::sin(angle);
+>>> let m2 = rot_center.x + m0 * -rot_center.x + m1 * -rot_center.y;
+>>> let m3 = -number::sin(angle);
+>>> let m4 = number::cos(angle);
+>>> let m5 = rot_center.y + m3 * -rot_center.x + m4 * -rot_center.y;
+>>>
+>>> def transform(x: number, y: number) {
+>>>     Point {
+>>>         x: m0 * x + m1 * y + m2,
+>>>         y: m3 * x + m4 * y + m5,
+>>>     }
+>>> }
+>>>
+>>> let p0 = transform(0, 0);
+>>> let p1 = transform(w, 0);
+>>> let p2 = transform(w, h);
+>>> let p3 = transform(0, h);
+>>>
+>>> let expandWidth = Image.width & (
+>>>     ceil(max(p0.x, p1.x, p2.x, p3.x))
+>>>     - floor(min(p0.x, p1.x, p2.x, p3.x))
+>>> );
+>>> let expandHeight = Image.height & (
+>>>     ceil(max(p0.y, p1.y, p2.y, p3.y))
+>>>     - floor(min(p0.y, p1.y, p2.y, p3.y))
+>>> );
+>>>
+>>> struct Size { w: number, h: number }
+>>> let imgSize = Size { w: w, h: h };
+>>> let transformedSize = match Input3 {
+>>>     RotateSizeChange::Crop => imgSize,
+>>>     RotateSizeChange::Expand => Size { w: expandWidth, h: expandHeight },
+>>> };
+>>>
+>>> // account for fast paths
+>>> let size = match angleDeg {
+>>>     0 | 180 | 360 => imgSize,
+>>>     90 | 270 => if bool::or(Input3 == RotateSizeChange::Expand, w == h) {
+>>>         Size { w: h, h: w }
+>>>     } else {
+>>>         transformedSize
+>>>     },
+>>>     _ => transformedSize,
+>>> };
+>>>
+>>> Image {
+>>>     width: size.w,
+>>>     height: size.h,
+>>>     channels: FillColor::getOutputChannels(Input4, img.channels)
+>>> }
+{
+    struct Point {
+        x: number,
+        y: number,
+    }
+    let img = Input0;
+    let w = img.width;
+    let h = img.height;
+    let rot_center = Point {
+        x: number::mul(w, number::rec(2)),
+        y: number::mul(h, number::rec(2)),
+    };
+    let angleDeg = number::mod(Input1, 360);
+    let angle = number::neg(number::degToRad(angleDeg));
+    let m0 = number::cos(angle);
+    let m1 = number::sin(angle);
+    let m2 = number::add(
+        rot_center.x,
+        number::mul(m0, number::neg(rot_center.x)),
+        number::mul(m1, number::neg(rot_center.y)),
+    );
+    let m3 = number::neg(number::sin(angle));
+    let m4 = number::cos(angle);
+    let m5 = number::add(
+        rot_center.y,
+        number::mul(m3, number::neg(rot_center.x)),
+        number::mul(m4, number::neg(rot_center.y)),
+    );
+    def transform(x: number, y: number) {
+        Point {
+            x: number::add(number::mul(m0, x), number::mul(m1, y), m2),
+            y: number::add(number::mul(m3, x), number::mul(m4, y), m5),
+        }
+    }
+    let p0 = transform(0, 0);
+    let p1 = transform(w, 0);
+    let p2 = transform(w, h);
+    let p3 = transform(0, h);
+    let expandWidth = Image.width
+      & number::add(
+            ceil(max(p0.x, p1.x, p2.x, p3.x)),
+            number::neg(floor(min(p0.x, p1.x, p2.x, p3.x))),
+        );
+    let expandHeight = Image.height
+      & number::add(
+            ceil(max(p0.y, p1.y, p2.y, p3.y)),
+            number::neg(floor(min(p0.y, p1.y, p2.y, p3.y))),
+        );
+    struct Size {
+        w: number,
+        h: number,
+    }
+    let imgSize = Size { w: w, h: h };
+    let transformedSize = match Input3 {
+        RotateSizeChange::Crop as Input3 => imgSize,
+        RotateSizeChange::Expand as Input3 => {
+            Size { w: expandWidth, h: expandHeight }
+        },
+    };
+    let size = match angleDeg {
+        0 | 180 | 360 as angleDeg => imgSize,
+        90 | 270 as angleDeg => {
+            match bool::or(
+                any::eq(Input3, RotateSizeChange::Expand),
+                any::eq(w, h),
+            ) {
+                true => Size { w: h, h: w },
+                false => transformedSize,
+            }
+        },
+        _ as angleDeg => transformedSize,
+    };
+    Image {
+        width: size.w,
+        height: size.h,
+        channels: FillColor::getOutputChannels(Input4, img.channels),
+    }
+}
+
+>>> struct Foo {
+>>>     someLongName: Bar {
+>>>         a: number | str | null,
+>>>         b: number | str | Baz { a: number },
+>>>         c: number,
+>>>         d: uint,
+>>>         e: number,
+>>>         f: str
+>>>     }
+>>> }
+>>> Foo {
+>>>     someLongName: Bar {
+>>>         a: (x*(-y)+z)/(w*w),
+>>>         b: max(0, x*y*z/(-w))
+>>>     }
+>>> }
+{
+    struct Foo {
+        someLongName: Bar {
+            a: number | str | null,
+            b: number | str | Baz { a: number },
+            c: number,
+            d: uint,
+            e: number,
+            f: str,
+        },
+    }
+    Foo {
+        someLongName: Bar {
+            a: number::mul(
+                number::add(number::mul(x, number::neg(y)), z),
+                number::rec(number::mul(w, w)),
+            ),
+            b: max(0, number::mul(x, y, z, number::rec(number::neg(w)))),
+        },
+    }
+}
+
+>>> let image = Input0;
+>>> let coords = Input3;
+>>> let x = Input1;
+>>> let y = Input2;
+>>>
+>>> let valid = match coords {
+>>>     CoordinateType::Relative => true,
+>>>     CoordinateType::Absolute => bool::and(x < image.width, y < image.height),
+>>> };
+>>>
+>>> if valid {
+>>>     Color { channels: Input0.channels }
+>>> } else {
+>>>     never
+>>> }
+{
+    let image = Input0;
+    let coords = Input3;
+    let x = Input1;
+    let y = Input2;
+    let valid = match coords {
+        CoordinateType::Relative as coords => true,
+        CoordinateType::Absolute as coords => bool::and(
+            number::lt(x, image.width),
+            number::lt(y, image.height),
+        ),
+    };
+    match valid {
+        true => Color { channels: Input0.channels },
+        false => never,
+    }
+}"
 `;
