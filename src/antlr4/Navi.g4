@@ -61,7 +61,10 @@ ifExpression:
 
 fieldAccessExpression: primaryExpression ('.' Identifier)*;
 
-negateExpression: OpMinus? fieldAccessExpression;
+powExpression:
+	fieldAccessExpression (OpPow fieldAccessExpression)?;
+
+negateExpression: OpMinus? powExpression;
 
 multiplicativeExpression:
 	negateExpression ((OpMult | OpDiv) negateExpression)*;
@@ -168,6 +171,7 @@ OpMinus: '-';
 OpPlus: '+';
 OpMult: '*';
 OpDiv: '/';
+OpPow: '**';
 OpEqual: '==';
 OpNotEqual: '!=';
 OpGt: '>';

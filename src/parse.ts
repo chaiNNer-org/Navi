@@ -367,6 +367,7 @@ class AstConverter {
             | Contexts['AdditiveExpressionContext']
             | Contexts['MultiplicativeExpressionContext']
             | Contexts['NegateExpressionContext']
+            | Contexts['PowExpressionContext']
             | Contexts['FieldAccessExpressionContext']
             | Contexts['PrimaryExpressionContext']
             | Contexts['FunctionCallContext']
@@ -465,11 +466,29 @@ class AstConverter {
             );
         }
         if (context instanceof NaviParser.NegateExpressionContext) {
-            const expr = this.toExpression(getRequired(context, 'fieldAccessExpression'));
+            const powContext = getRequired(context, 'powExpression');
+            const expr = this.toExpression(powContext);
+
             if (getOptionalToken(context, 'OpMinus')) {
+                if (getOptionalToken(powContext, 'OpPow')) {
+                    // error: -a ** b is not allowed
+                    throw new ConversionError(
+                        context,
+                        'Negation cannot be applied to exponentiation. -a**b is not allowed. Write either -(a**b) or (-a)**b instead.'
+                    );
+                }
                 return new FunctionCallExpression('number::neg', [expr]);
             }
+
             return expr;
+        }
+        if (context instanceof NaviParser.PowExpressionContext) {
+            const expressions = getMultiple(context, 'fieldAccessExpression').map(
+                this.toExpression
+            );
+            if (expressions.length === 1) return expressions[0];
+            const [x, y] = expressions;
+            return new FunctionCallExpression('number::pow', [x, y]);
         }
         if (context instanceof NaviParser.FieldAccessExpressionContext) {
             const ofExpression = this.toExpression(getRequired(context, 'primaryExpression'));

@@ -165,6 +165,10 @@ const expressionSnippets: string[] = [
     String.raw`a + b * c`,
     String.raw`-100 - -100`,
     String.raw`a---100`,
+    String.raw`a**b`,
+    String.raw`(-a)**b`,
+    String.raw`-(a**b)`,
+    String.raw`a*b**c*d`,
 
     // logical
     String.raw`not a and b or c`,
@@ -308,7 +312,8 @@ const invalidExpressionSnippets: string[] = [
     String.raw`--a`,
     String.raw`a+--a`,
     String.raw`a++a`,
-    String.raw`a**a`,
+    String.raw`a* *a`,
+    String.raw`-a**a`,
     String.raw`a-100`,
 
     // logical
