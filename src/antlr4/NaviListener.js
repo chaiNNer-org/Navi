@@ -176,6 +176,15 @@ export default class NaviListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by NaviParser#powExpression.
+	enterPowExpression(ctx) {
+	}
+
+	// Exit a parse tree produced by NaviParser#powExpression.
+	exitPowExpression(ctx) {
+	}
+
+
 	// Enter a parse tree produced by NaviParser#negateExpression.
 	enterNegateExpression(ctx) {
 	}

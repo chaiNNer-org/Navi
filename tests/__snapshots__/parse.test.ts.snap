@@ -458,6 +458,18 @@ number::add(-100, number::neg(-100))
 >>> a---100
 number::add(a, number::neg(number::neg(-100)))
 
+>>> a**b
+number::pow(a, b)
+
+>>> (-a)**b
+number::pow(number::neg(a), b)
+
+>>> -(a**b)
+number::neg(number::pow(a, b))
+
+>>> a*b**c*d
+number::mul(a, number::pow(b, c), d)
+
 >>> not a and b or c
 bool::or(bool::and(bool::not(a), b), c)
 
@@ -844,8 +856,11 @@ SyntaxError: At 1:3: extraneous input '-' expecting {'{', '(', 'if', 'match', In
 >>> a++a
 SyntaxError: At 1:2: extraneous input '+' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
 
->>> a**a
-SyntaxError: At 1:2: extraneous input '*' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+>>> a* *a
+SyntaxError: At 1:3: extraneous input '*' expecting {'{', '(', 'if', 'match', IntInterval, NonIntInterval, IntervalInclusive, IntervalMinExclusive, IntervalMaxExclusive, IntervalExclusive, Number, String, Identifier, '-'}
+
+>>> -a**a
+Error: Unable to convert \`-a**a\`: Negation cannot be applied to exponentiation. -a**b is not allowed. Write either -(a**b) or (-a)**b instead.
 
 >>> a-100
 SyntaxError: At 1:1: extraneous input '-100' expecting <EOF>
