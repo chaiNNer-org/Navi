@@ -625,6 +625,23 @@ bool::not(any::eq(number::mul(a, b), c))
         Image { width: width }
     }
     foo(int)
+}
+
+>>> def foo(a: uint): Image { width } { let width = a + 1; Image { width } } foo(int)
+{
+    def foo(a: uint): Image { width: width } {
+        let width = number::add(a, 1);
+        Image { width: width }
+    }
+    foo(int)
+}
+
+>>> def foo(a: uint): Image { width } { width } foo(int)
+{
+    def foo(a: uint): Image { width: width } {
+        width
+    }
+    foo(int)
 }"
 `;
 

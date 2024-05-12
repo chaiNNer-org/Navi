@@ -208,6 +208,8 @@ const expressionSnippets: string[] = [
     String.raw`def foo(a: int): int = a; foo(int)`,
     String.raw`def foo(a: int): int { a + 1 } foo(int)`,
     String.raw`def foo(a: uint): Image { width: uint } { let width = a + 1; Image { width: width } } foo(int)`,
+    String.raw`def foo(a: uint): Image { width } { let width = a + 1; Image { width } } foo(int)`,
+    String.raw`def foo(a: uint): Image { width } { width } foo(int)`,
 ];
 const invalidExpressionSnippets: string[] = [
     String.raw``,
