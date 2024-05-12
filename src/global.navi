@@ -64,6 +64,11 @@ intrinsic def number::exp(a: number): 0..inf | nan;
 intrinsic def number::log(a: number): number;
 intrinsic def number::pow(a: number, b: number): number;
 
+// Returns the square root of a number. Negative numbers return `never`.
+def number::sqrt(x: number): 0..inf | nan {
+    number::pow(x & (0..inf | nan), 0.5)
+}
+
 let number::PI = 3.141592653589793;
 let number::E = 2.718281828459045;
 

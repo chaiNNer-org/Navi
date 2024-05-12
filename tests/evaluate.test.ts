@@ -259,6 +259,7 @@ describe('Builtin functions', () => {
 
     testUnary('number::exp', numbers);
     testUnary('number::log', numbers);
+    testUnary('number::sqrt', numbers);
 
     const ints = numbers.map((n) => intersect(n, INT)).filter((n) => n.type !== 'never');
 
